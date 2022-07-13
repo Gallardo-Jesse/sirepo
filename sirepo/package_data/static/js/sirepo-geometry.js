@@ -22,7 +22,7 @@ class GeometryUtils {
 
     /**
      * Names of basis directions
-     * @returns {[string]}
+     * @returns {string[]}
      */
     static BASIS() {
         return ['x', 'y', 'z'];
@@ -42,10 +42,10 @@ class GeometryUtils {
 
     /**
      * Find the points with the largest or smallest value in the given dimension
-     * @param {[Point]} points - the points to sort
+     * @param {Point[]} points - the points to sort
      * @param {string} dim - the dimension in which to sort (x|y|z)
      * @param {boolean} doReverse [false] - if true, reverses the sort order
-     * @returns {[Point]}
+     * @returns {Point[]}
      */
     static extrema(points, dim, doReverse = false) {
         const arr = GeometryUtils.sortInDimension(points, dim, doReverse);
@@ -55,10 +55,10 @@ class GeometryUtils {
     /**
      * Sort (with optional reversal) the point array by the values in the given dimension.
      * Array is cloned first so the original is unchanged
-     * @param {[Point]} points - the points to sort
+     * @param {Point[]} points - the points to sort
      * @param {string} dim - the dimension in which to sort (x|y|z)
      * @param {boolean} doReverse [false] - if true, reverses the sort order
-     * @returns {[Point]}
+     * @returns {Point[]}
      */
     static sortInDimension(points, dim, doReverse = false) {
         return points.slice(0).sort((p1, p2) => {
@@ -84,7 +84,7 @@ class GeometricObject {
 
     /**
      * String representation of an array of GeometricObjects
-     * @param {[GeometricObject]} arr - the GeometricObjects to render as strings
+     * @param {GeometricObject[]} arr - the GeometricObjects to render as strings
      * @returns {string}
      */
     static arrayString(arr) {
@@ -166,13 +166,13 @@ class GeometricObject {
 class Matrix extends GeometricObject {
 
     /**
-     * @param {[number] | [[number]]} val - an array representing the matrix
+     * @param {number[] | number[][]} val - an array representing the matrix
      * @throws - if the dimension is > 2
      */
     constructor(val) {
         super();
 
-        /** @member {[number] | [[number]]} - the array */
+        /** @member {number[] | number[][]} - the array */
         this.val = val;
 
         /** @member {number} - the dimension of this Matrix */
@@ -374,7 +374,7 @@ class Matrix extends GeometricObject {
  */
 class SquareMatrix extends Matrix {
     /**
-     * @param {[[number]]} val - an array representing the matrix
+     * @param {number[][]} val - an array representing the matrix
      * @throws - if the number of rows and columns differ
      */
     constructor(val) {
@@ -570,7 +570,7 @@ class Point extends GeometricObject {
 
     /**
      * Array of the coordinates
-     * @returns {[number]}
+     * @returns {number[]}
      */
     coords() {
         return [this.x, this.y, this.z];
@@ -648,7 +648,7 @@ class Line extends GeometricObject {
     constructor(point1, point2) {
         super();
 
-        /** @member {[Point]} - an array of the given Points */
+        /** @member {Point[]} - an array of the given Points */
         this.points = [point1, point2];
     }
 
@@ -754,7 +754,7 @@ class Line extends GeometricObject {
     /**
      * Array comprising the difference between the x and y coordinates of the defining Points. Note that this
      * implies that e.g. [[0, 0], [1, 1]] and [[1, 1], [2, 2]] have the same toVector() value
-     * @returns {[number]}
+     * @returns {number[]}
      */
     toVector() {
         return [this.points[0].x - this.points[1].x, this.points[0].y - this.points[1].y];
@@ -798,7 +798,7 @@ class LineSegment extends Line {
 
     /**
      * The extents of this LineSegment, that is [[minimum x, maximum x], [minimum y, maximum y]]
-     * @returns {[[number]]}
+     * @returns {number[][]}
      */
     extents() {
         const p = this.points;
@@ -862,7 +862,7 @@ class Rect extends GeometricObject {
         /** @member {Point} - the 2nd Point */
         this.diagPoint2 = diagPoint2;
 
-        /** @member {[Point]} - array containing the Points */
+        /** @member {Point[]} - array containing the Points */
         this.points = [diagPoint1, diagPoint2];
     }
 
@@ -877,7 +877,7 @@ class Rect extends GeometricObject {
     /**
      * Intersections of the given Line with the sides of this Rect
      * @param {Line} line - a Line
-     * @returns {[Point]}
+     * @returns {Point[]}
      */
     boundaryIntersectionsWithLine(line) {
         return this.sides()
@@ -889,7 +889,7 @@ class Rect extends GeometricObject {
      * Intersections of the LineSegment defined by given Points with the sides of this Rect
      * @param {Point} point1 - 1st Point
      * @param {Point} point2 - 2nd Point
-     * @returns {[Point]}
+     * @returns Point[]}
      */
     boundaryIntersectionsWithPts(point1, point2) {
         return this.boundaryIntersectionsWithSeg(new LineSegment(point1, point2));
@@ -899,7 +899,7 @@ class Rect extends GeometricObject {
      * Intersections of the given LineSegment with the sides of this Rect
      * @param {Point} point1 - 1st Point
      * @param {Point} point2 - 2nd Point
-     * @returns {[Point]}
+     * @returns {Point[]}
      */
     boundaryIntersectionsWithSeg(lineSegment) {
         return this.boundaryIntersectionsWithLine(lineSegment);
@@ -952,7 +952,7 @@ class Rect extends GeometricObject {
 
     /**
      * The corners of this Rect, sorted to go clockwise from (minx, miny) assuming standard axes directions
-     * @returns {[Point]}
+     * @returns {Point[]}
      */
     corners() {
         const c = [];
@@ -1011,8 +1011,8 @@ class Rect extends GeometricObject {
 
     /**
      * Filters the given LineSegments according to whether they lie inside this Rect
-     * @param {[LineSegment]} lineSegments - an array of LineSegments to check
-     * @returns {[LineSegment]}
+     * @param {LineSegment[]} lineSegments - an array of LineSegments to check
+     * @returns {LineSegment[]}
      */
     segmentsInside(lineSegments) {
         return lineSegments.filter(l => this.containsLineSegment(l));
@@ -1020,7 +1020,7 @@ class Rect extends GeometricObject {
 
     /**
      * The sides of this Rect as LineSegments between the corners
-     * @returns {[LineSegment]}
+     * @returns {LineSegment[]}
      */
     sides() {
         const s = [];
