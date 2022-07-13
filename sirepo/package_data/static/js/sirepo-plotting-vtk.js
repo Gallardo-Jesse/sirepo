@@ -24,7 +24,7 @@ class VTKUtils {
 
     /**
      * Builds a wireframe box with the specified bounds and optional padding
-     * @param {[number]} bounds - the bounds in the format [xMin, xMax, yMin, yMax, zMin, zMax]
+     * @param {number[]} bounds - the bounds in the format [xMin, xMax, yMin, yMax, zMin, zMax]
      * @param {number} padPct - additional padding as a percentage of the size
      * @returns {BoxBundle}
      */
@@ -68,8 +68,8 @@ class VTKUtils {
     /**
      * Converts a string or an array of floats to an array of floats using vtk's conversion util, for use in
      * colors
-     * @param {string|[number]} hexStringOrArray - a color string (#rrggbb) or array of floats
-     * @returns {[number]} - array of floats ranging from 0 - 1.
+     * @param {string|number[]} hexStringOrArray - a color string (#rrggbb) or array of floats
+     * @returns {number[]} - array of floats ranging from 0 - 1.
      */
     static colorToFloat(hexStringOrArray) {
         return Array.isArray(hexStringOrArray) ? hexStringOrArray : vtk.Common.Core.vtkMath.hex2float(hexStringOrArray);
@@ -78,7 +78,7 @@ class VTKUtils {
     /**
      * Converts a string or an array of floats to a string using vtk's conversion util, for use in
      * colors
-     * @param {string|[number]} hexStringOrArray - a color string (#rrggbb) or array of floats
+     * @param {string|number[]} hexStringOrArray - a color string (#rrggbb) or array of floats
      * @returns {string} - a color string (#rrggbb)
      */
     static colorToHex(hexStringOrArray) {
@@ -88,7 +88,7 @@ class VTKUtils {
     /**
      * Creates a vtk user matrix from a SquareMatrix.
      * * @param {SquareMatrix} matrix - vtk actor
-     * @returns {[[number]]}
+     * @returns {number[][]}
      */
     static userMatrix(matrix) {
         let m = [];
@@ -188,7 +188,7 @@ class VTKScene {
 
     /**
      * Convenience method for removing the given actors from the renderer, or all actors if input is null/empty
-     * @param {[vtk.Rendering.Core.vtkActor]|null} actors
+     * @param {vtk.Rendering.Core.vtkActor[]|null} actors
      */
     removeActors(actors) {
         if (! actors) {
@@ -228,7 +228,7 @@ class VTKScene {
 
     /**
      * Sets the background color of the renderer
-     * @param {string|[number]} color
+     * @param {string|number[]} color
      */
     setBgColor(color) {
         this.renderer.setBackground(VTKUtils.colorToFloat(color));
@@ -237,8 +237,8 @@ class VTKScene {
 
     /**
      * Sets the camera to the given position, pointing such that "up" is in the given direction
-     * @param {[number]} position
-     * @param {[numbeer]} viewUp
+     * @param {number[]} position
+     * @param {number[]} viewUp
      */
     setCam(position = [1, 0, 0], viewUp = [0, 0, 1]) {
         this.cam.setPosition(...position);
@@ -335,7 +335,7 @@ class ActorBundle {
         /** @member {*} - vtk source */
         this.setSource(source);
 
-        /** @member {vtk.Rendering.Core.vtkActor} - the transform */
+        /** @member {vtk.Rendering.Core.vtkActor} - the actor */
         this.actor = vtk.Rendering.Core.vtkActor.newInstance({
             mapper: this.mapper
         });
@@ -384,7 +384,7 @@ class ActorBundle {
 
     /**
      * Convenience method for setting the color. Uses colorToFloat to convert
-     * @param {string|[number]} color
+     * @param {string|number[]} color
      */
     setColor(color) {
         this.actorProperties.setColor(VTKUtils.colorToFloat(color));
@@ -416,8 +416,8 @@ class ActorBundle {
  */
 class BoxBundle extends ActorBundle {
     /**
-     * @param {[number]} labSize - array of the x, y, z sides of the box in the lab
-     * @param {[number]} labCenter - array of the x, y, z coords of the box's center in the lab
+     * @param {number[]} labSize - array of the x, y, z sides of the box in the lab
+     * @param {number[]} labCenter - array of the x, y, z coords of the box's center in the lab
      * @param {SIREPO.GEOMETRY.Transform} transform - a Transform to translate between "lab" and "local" coordinate systems
      * @param {{}} actorProperties - a map of actor properties (e.g. 'color') to values
      */
@@ -438,7 +438,7 @@ class BoxBundle extends ActorBundle {
 
     /**
      * Sets the center of the box
-     * @param {[number]} labCenter - array of the x, y, z coords of the box's center in the lab
+     * @param {number[]} labCenter - array of the x, y, z coords of the box's center in the lab
      */
     setCenter(labCenter) {
         this.source.setCenter(labCenter);
@@ -446,7 +446,7 @@ class BoxBundle extends ActorBundle {
 
     /**
      * Sets the size of the box
-     * @param {[number]} labSize- array of the x, y, z lengths of the box
+     * @param {number[]} labSize- array of the x, y, z lengths of the box
      */
     setSize(labSize) {
         this.source.setXLength(labSize[0]);
@@ -461,8 +461,8 @@ class BoxBundle extends ActorBundle {
  */
 class LineBundle extends ActorBundle {
     /**
-     * @param {[number]} labP1 - 1st point
-     * @param {[number]} labP2 - 2nd point
+     * @param {number[]} labP1 - 1st point
+     * @param {number[]} labP2 - 2nd point
      * @param {SIREPO.GEOMETRY.Transform} transform - a Transform to translate between "lab" and "local" coordinate systems
      * @param {{}} actorProperties - a map of actor properties (e.g. 'color') to values
      */
@@ -489,9 +489,9 @@ class LineBundle extends ActorBundle {
  */
 class PlaneBundle extends ActorBundle {
     /**
-     * @param {[number]} labOrigin - origin
-     * @param {[number]} labP1 - 1st point
-     * @param {[number]} labP2 - 2nd point
+     * @param {number[]} labOrigin - origin
+     * @param {number[]} labP1 - 1st point
+     * @param {number[]} labP2 - 2nd point
      * @param {SIREPO.GEOMETRY.Transform} transform - a Transform to translate between "lab" and "local" coordinate systems
      * @param {Object} actorProperties - a map of actor properties (e.g. 'color') to values
      */
@@ -509,9 +509,9 @@ class PlaneBundle extends ActorBundle {
 
     /**
      * Set the defining points of the plane
-     * @param {[number]} labOrigin - origin
-     * @param {[number]} labP1 - 1st point
-     * @param {[number]} labP2 - 2nd point
+     * @param {number[]} labOrigin - origin
+     * @param {number[]} labP1 - 1st point
+     * @param {number[]} labP2 - 2nd point
      */
     setPoints(labOrigin, labP1, labP2) {
         this.source.setOrigin(...this.transform.apply(new SIREPO.GEOMETRY.Matrix(labOrigin)).val);
@@ -535,7 +535,7 @@ class PlaneBundle extends ActorBundle {
  */
 class SphereBundle extends ActorBundle {
     /**
-     * @param {[number]} labCenter - center in the lab
+     * @param {number[]} labCenter - center in the lab
      * @param {number} radius
      * @param {SIREPO.GEOMETRY.Transform} transform - a Transform to translate between "lab" and "local" coordinate systems
      * @param {Object} actorProperties - a map of actor properties (e.g. 'color') to values
@@ -558,7 +558,7 @@ class SphereBundle extends ActorBundle {
 
     /**
      * Sets the center of the sphere
-     * @param {[number]} labCenter - center in the lab
+     * @param {number[]} labCenter - center in the lab
      */
     setCenter(labCenter) {
         this.source.setCenter(this.transform.apply(new SIREPO.GEOMETRY.Matrix(labCenter)).val);
@@ -607,8 +607,8 @@ class CoordMapper {
 
     /**
      * Builds a box
-     * @param {[number]} labSize - array of the x, y, z sides of the box in the lab
-     * @param {[number]} labCenter - array of the x, y, z coords of the box's center in the lab
+     * @param {number[]} labSize - array of the x, y, z sides of the box in the lab
+     * @param {number[]} labCenter - array of the x, y, z coords of the box's center in the lab
      * @param {{}} actorProperties - a map of actor properties (e.g. 'color') to values
      * @returns {BoxBundle}
      */
@@ -618,8 +618,8 @@ class CoordMapper {
 
     /**
      * Builds a line
-     * @param {[number]} labP1 - 1st point
-     * @param {[number]} labP2 - 2nd point
+     * @param {number[]} labP1 - 1st point
+     * @param {number[]} labP2 - 2nd point
      * @param {Object} actorProperties - a map of actor properties (e.g. 'color') to values
      * @returns {LineBundle}
      */
@@ -629,9 +629,9 @@ class CoordMapper {
 
     /**
      * Builds a plane
-     * @param {[number]} labOrigin - origin
-     * @param {[number]} labP1 - 1st point
-     * @param {[number]} labP2 - 2nd point
+     * @param {number[]} labOrigin - origin
+     * @param {number[]} labP1 - 1st point
+     * @param {number[]} labP2 - 2nd point
      * @param {Object} actorProperties - a map of actor properties (e.g. 'color') to values
      * @returns {LineBundle}
      */
@@ -641,7 +641,7 @@ class CoordMapper {
 
     /**
      * Builds a sphere
-     * @param {[number]} labCenter - center in the lab
+     * @param {number[]} labCenter - center in the lab
      * @param {number} radius
      * @param {Object} actorProperties - a map of actor properties (e.g. 'color') to values
      * @returns {SphereBundle}
@@ -693,7 +693,7 @@ class ViewPortObject {
     /**
      * An external edge has all other corners on the same side of the line it defines
      * @param {string} dim - dimension (x|y|z)
-     * @returns {[LineSegment]}
+     * @returns {LineSegment[]}
      */
     externalViewportEdgesForDimension(dim) {
         const edges = [];
@@ -752,8 +752,8 @@ class ViewPortObject {
 
     /**
      * Translates the given Points from vtk world to viewport
-     * @param {[Point]} coords - 3d points
-     * @returns {[Point]} - 2d points
+     * @param {Point[]} coords - 3d points
+     * @returns {Point[]} - 2d points
      */
    viewPortPoints(coords) {
         return coords.map(x => this.viewPortPoint(x));
@@ -761,7 +761,7 @@ class ViewPortObject {
 
     /**
      * Translates corners from vtk world to viewport
-     * @returns {[Point]}
+     * @returns {Point[]}
      */
     viewPortCorners() {
         return this.viewPortPoints(this.worldCorners());
@@ -795,7 +795,7 @@ class ViewPortObject {
 
     /**
      * Gets the corners of the vtk object. Subclasses should override
-     * @returns {[Point]}
+     * @returns {Point[]}
      */
     worldCorners() {
         return [];
@@ -862,7 +862,7 @@ class ViewPortBox extends ViewPortObject {
 
     /**
      * Gets coordinate axis lines through the given point
-     * @param {[number]} origin
+     * @param {number[]} origin
      * @returns {{}} - mapping of dimension to the lines, e.g. {x: LineSegment1, ...}
      */
     coordLines(origin=[0, 0, 0]) {
@@ -896,7 +896,7 @@ class ViewPortBox extends ViewPortObject {
 
     /**
      * Gets the corners of the box
-     * @returns {[Point]}
+     * @returns {Point[]}
      */
     worldCorners() {
         const ctr = this.worldCenter();
@@ -940,7 +940,7 @@ class ViewPortBox extends ViewPortObject {
 
     /**
      * Gets the size of the box
-     * @returns {[number]}
+     * @returns {number[]}
      */
     worldSize() {
         return [
