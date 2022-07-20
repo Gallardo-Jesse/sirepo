@@ -446,7 +446,7 @@ class BoxBundle extends ActorBundle {
 
     /**
      * Sets the size of the box
-     * @param {number[]} labSize- array of the x, y, z lengths of the box
+     * @param {number[]} labSize - array of the x, y, z lengths of the box
      */
     setSize(labSize) {
         this.source.setXLength(labSize[0]);
