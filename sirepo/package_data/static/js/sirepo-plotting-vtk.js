@@ -87,7 +87,7 @@ class VTKUtils {
 
     /**
      * Creates a vtk user matrix from a SquareMatrix.
-     * * @param {SquareMatrix} matrix - vtk actor
+     * @param {SquareMatrix} matrix - vtk actor
      * @returns {number[][]}
      */
     static userMatrix(matrix) {
