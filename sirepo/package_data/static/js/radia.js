@@ -1103,7 +1103,18 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
             $scope.isExpanded = item => expanded[itemIndex(item)];
 
             $scope.modelFields = index => {
-                return SIREPO.APP_SCHEMA.view[$scope.field[index].type].advanced;
+                const mn = $scope.field[index].type;
+                let mf = SIREPO.APP_SCHEMA.view[mn].advanced.map(f => {
+                    const m = appState.parseModelField(f);
+                    if (! m) {
+                        return f;
+                    }
+                    const mm = appState.parseModelField(m[1]);
+                    const smn = SIREPO.APP_SCHEMA.model[mn][mm[0]][SIREPO.INFO_INDEX_TYPE].split('.')[1];
+                    return `${smn}.${mm[1]}`;
+                })
+                srdbg(mf);
+                return mf;  //SIREPO.APP_SCHEMA.view[$scope.field[index].type].advanced;
             };
 
             $scope.moveItem = (direction, item) => {
@@ -1138,7 +1149,7 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
                 if (! watchedModels.includes(name)) {
                     return;
                 }
-                appState.removeModel(name);
+                //appState.removeModel(name);
                 appState.cancelChanges('geometryReport');
             });
 

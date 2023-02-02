@@ -861,7 +861,7 @@
         "radiaObject": {
             "_super": ["_", "model", "layoutObject"],
             "name": ["Name", "String", ""],
-            "transforms": ["", "ModelArrayTable", [], "", ["cloneTransform" ,"rotate", "symmetryTransform"]]
+            "transforms": ["", "ModelArrayTable", [], "", ["cloneTransform", "rotate", "symmetryTransform"]]
         },
         "reset": {
         },
@@ -950,7 +950,8 @@
         "termination": {
             "airGap": ["Air Gap [mm]", "Float", 0.0, "Distance from previous object"],
             "gapOffset": ["Gap Offset [mm]", "Float", 0.0, "Additional offset away from the beam along the height axis"],
-            "object": ["Object", "model.geomObject", {}]
+            "object": ["Object", "model.geomObject", {}],
+            "type": ["_", "String", "termination"]
         },
         "transform": {
             "id": ["_", "RandomId", ""],
@@ -1025,7 +1026,7 @@
             "terminationGroup": ["_", "model.geomGroup", {
                 "name": "terminations"
             }],
-            "terminations": ["Termination Objects", "TerminationTable",
+            "terminations": ["Termination Objects", "ModelArrayTable",
                 [
                     {
                         "airGap": 0,
@@ -1041,7 +1042,9 @@
                             "size": [32.5 ,45.0 ,9.0]
                         }
                     }
-                ]
+                ],
+                "",
+                ["termination"]
             ],
             "corePoleGroup": ["_", "model.geomGroup", {
                 "name": "core + pole"
@@ -1508,6 +1511,22 @@
         },
         "termination": {
             "title": "Termination",
+            "basic": [],
+            "advanced": [
+                "termination.object.name",
+                "termination.object.shapeButton",
+                "termination.object.size",
+                "termination.object.segments",
+                "airGap",
+                "gapOffset",
+                "termination.object.material",
+                "termination.object.materialFile",
+                "termination.object.magnetization",
+                "termination.object.remanentMag"
+            ]
+        },
+        "terminations": {
+            "maxRows": 10,
             "basic": [],
             "advanced": [
                 "termination.object.name",
