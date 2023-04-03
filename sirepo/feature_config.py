@@ -4,26 +4,29 @@
 :copyright: Copyright (c) 2016 RadiaSoft LLC.  All Rights Reserved.
 :license: http://www.apache.org/licenses/LICENSE-2.0.html
 """
-from __future__ import absolute_import, division, print_function
-
 # defer all imports so *_CODES is available to testing functions
 
 
 #: Codes that depend on other codes. [x][0] depends on [x][1]
+
 _DEPENDENT_CODES = [
     ["jspec", "elegant"],
     ["controls", "madx"],
+    ["omega", "elegant"],
+    ["omega", "madx"],
+    ["omega", "opal"],
 ]
 
 #: Codes on prod
 PROD_FOSS_CODES = frozenset(
     (
+        "activait",
+        "cloudmc",
         "controls",
         "elegant",
         "genesis",
         "jspec",
         "madx",
-        "ml",
         "opal",
         "radia",
         "shadow",
@@ -38,12 +41,10 @@ PROD_FOSS_CODES = frozenset(
 #: Codes on dev, alpha, and beta
 _NON_PROD_FOSS_CODES = frozenset(
     (
-        "irad",
         "myapp",
-        "cloudmc",
-        "rcscon",
-        "rs4pi",
         "silas",
+        "omega",
+        "rshellweg",
     )
 )
 
@@ -109,10 +110,13 @@ def proprietary_sim_types():
     )
 
 
-def _data_dir(value):
-    import sirepo.srdb
+def _is_fedora_36():
+    from pykern import pkio
 
-    return sirepo.srdb.root().join(value)
+    p = pkio.py_path("/etc/os-release")
+    if not p.check():
+        return False
+    return "fedora:36" in p.read()
 
 
 def _init():
@@ -131,6 +135,13 @@ def _init():
     _cfg = pkconfig.init(
         # No secrets should be stored here (see sirepo.job.agent_env)
         api_modules=((), set, "optional api modules, e.g. status"),
+        cloudmc=dict(
+            data_storage_url=(
+                "https://github.com/radiasoft/sirepo-data-cloudmc/raw/master/",
+                str,
+                "url base to reach cloudmc example h5m files",
+            ),
+        ),
         default_proprietary_sim_types=(
             frozenset(),
             set,
@@ -139,13 +150,13 @@ def _init():
         schema_common=dict(
             hide_guest_warning=b("Hide the guest warning in the UI", dev=True),
         ),
+        jspec=dict(
+            derbenevskrinsky_force_formula=b("Include Derbenev-Skrinsky force formula"),
+        ),
         moderated_sim_types=(
             frozenset(),
             set,
             "codes where all users must be authorized via moderation",
-        ),
-        jspec=dict(
-            derbenevskrinsky_force_formula=b("Include Derbenev-Skrinsky force formula"),
         ),
         package_path=(
             tuple(["sirepo"]),
@@ -163,11 +174,19 @@ def _init():
             "codes that contain proprietary information and authorization to use is granted through oauth",
         ),
         raydata=dict(
-            data_dir=(
-                None,
-                _data_dir,
-                "abspath of dir to store raydata analysis output",
+            scan_monitor_url=(
+                "http://127.0.0.1:9001/scan-monitor",
+                str,
+                "url to reach scan monitor daemon",
             ),
+        ),
+        # TODO(pjm): myapp can't be in react_sim_types or unit tests fail
+        react_sim_types=(
+            ("jspec", "genesis", "warppba", "omega", "myapp")
+            if pkconfig.channel_in("dev")
+            else (),
+            set,
+            "React apps",
         ),
         sim_types=(set(), set, "simulation types (codes) to be imported"),
         slack_uri=(
@@ -190,6 +209,11 @@ def _init():
                 'Show "Export ML Script" menu item',
             ),
         ),
+        trust_sh_env=(
+            False,
+            bool,
+            "Trust Bash env to run Python and agents",
+        ),
         warpvnd=dict(
             allow_3d_mode=(True, bool, "Include 3D features in the Warp VND UI"),
             display_test_boxes=b(
@@ -211,11 +235,8 @@ def _init():
         if v[0] in s:
             s.add(v[1])
     _cfg.sim_types = frozenset(s)
-    if "raydata" in _cfg.sim_types:
-        assert (
-            _cfg.raydata.data_dir
-        ), "raydata is a sim type but no cfg.raydata.data_dir (also check job_driver.cfg.aux_volumes)"
     _check_packages(_cfg.package_path)
+    _cfg.is_fedora_36 = _is_fedora_36()
     return _cfg
 
 

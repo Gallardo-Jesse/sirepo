@@ -17,7 +17,9 @@ import os
 import re
 import shutil
 import signal
-import sirepo.auth
+import sirepo.feature_config
+import sirepo.modules
+import sirepo.nersc
 import sirepo.tornado
 import socket
 import subprocess
@@ -48,7 +50,6 @@ cfg = None
 
 def start():
     # TODO(robnagler) commands need their own init hook like the server has
-    job.init()
     global cfg
 
     cfg = pkconfig.init(
@@ -186,11 +187,11 @@ class _Dispatcher(PKDict):
                 self._websocket = await tornado.websocket.websocket_connect(
                     tornado.httpclient.HTTPRequest(
                         url=cfg.supervisor_uri,
-                        validate_cert=sirepo.job.cfg.verify_tls,
+                        validate_cert=sirepo.job.cfg().verify_tls,
                     ),
-                    max_message_size=job.cfg.max_message_bytes,
-                    ping_interval=job.cfg.ping_interval_secs,
-                    ping_timeout=job.cfg.ping_timeout_secs,
+                    max_message_size=job.cfg().max_message_bytes,
+                    ping_interval=job.cfg().ping_interval_secs,
+                    ping_timeout=job.cfg().ping_timeout_secs,
                 )
                 s = self.format_op(None, job.OP_ALIVE)
                 while True:
@@ -393,7 +394,7 @@ class _Dispatcher(PKDict):
         try:
             s = tornado.iostream.IOStream(
                 connection,
-                max_buffer_size=job.cfg.max_message_bytes,
+                max_buffer_size=job.cfg().max_message_bytes,
             )
             while True:
                 m = await self._fastcgi_msg_q.get()
@@ -404,7 +405,7 @@ class _Dispatcher(PKDict):
                 await self.job_cmd_reply(
                     m,
                     job.OP_ANALYSIS,
-                    await s.read_until(b"\n", job.cfg.max_message_bytes),
+                    await s.read_until(b"\n", job.cfg().max_message_bytes),
                 )
         except Exception as e:
             pkdlog("msg={} error={} stack={}", m, e, pkdexc())
@@ -436,6 +437,7 @@ class _Cmd(PKDict):
         self._terminating = False
         self._start_time = int(time.time())
         self.jid = self.msg.computeJid
+        self._uid = job.split_jid(jid=self.jid).uid
 
     def destroy(self):
         self._terminating = True
@@ -455,6 +457,7 @@ class _Cmd(PKDict):
             cmd=self.job_cmd_cmd(),
             env=self.job_cmd_env(),
             source_bashrc=self.job_cmd_source_bashrc(),
+            uid=self._uid,
         )
 
     def job_cmd_env(self, env=None):
@@ -466,9 +469,12 @@ class _Cmd(PKDict):
                 SIREPO_SIM_DATA_SUPERVISOR_SIM_DB_FILE_URI=cfg.supervisor_sim_db_file_uri,
                 SIREPO_SIM_DATA_SUPERVISOR_SIM_DB_FILE_TOKEN=cfg.supervisor_sim_db_file_token,
             ),
+            uid=self._uid,
         )
 
     def job_cmd_source_bashrc(self):
+        if sirepo.feature_config.cfg().trust_sh_env:
+            return ""
         return "source $HOME/.bashrc"
 
     async def on_stderr_read(self, text):
@@ -616,14 +622,18 @@ class _SbatchPrepareSimulationCmd(_SbatchCmd):
 
     async def _await_exit(self):
         await self._process.exit_ready()
-        s = pkjson.load_any(self.stdout).get("state")
+        s = job.ERROR
+        o = None
+        if "stdout" in self:
+            o = pkjson.load_any(self.stdout)
+            s = o.get("state")
         if s != job.COMPLETED:
             raise AssertionError(
                 pkdformat(
                     "unexpected state={} from result of cmd={} stdout={}",
                     s,
                     self,
-                    self.stdout,
+                    o,
                 )
             )
 
@@ -701,6 +711,17 @@ class _SbatchRun(_SbatchCmd):
         m = re.search(r"Submitted batch job (\d+)", p.stdout)
         # TODO(robnagler) if the guy is out of hours, will fail
         if not m:
+            await self.dispatcher.send(
+                self.dispatcher.format_op(
+                    self.msg,
+                    job.OP_ERROR,
+                    error=f"error submitting sbatch job error={p.stderr}",
+                    reply=PKDict(
+                        state=job.ERROR,
+                        error=p.stderr,
+                    ),
+                )
+            )
             raise ValueError(
                 f"Unable to submit exit={p.returncode} stdout={p.stdout} stderr={p.stderr}"
             )
@@ -734,17 +755,6 @@ class _SbatchRun(_SbatchCmd):
         await c._await_exit()
 
     def _sbatch_script(self):
-        def _assert_project():
-            p = self.msg.sbatchProject
-            if not p:
-                return ""
-            o = subprocess.check_output(["hpssquota"], text=True)
-            assert re.search(r"^[-\w]+$", p), f"invalid NERSC project={p}"
-            assert re.search(
-                r"{}\s+\d+\.".format(p), o
-            ), f"sbatchProject={p} is invalid. hpssquota={o}"
-            return f"#SBATCH --account={p}"
-
         def _processor():
             if self.msg.sbatchQueue == "debug" and pkconfig.channel_in("dev"):
                 return "knl"
@@ -757,8 +767,8 @@ class _SbatchRun(_SbatchCmd):
             o = f"""#SBATCH --image={i}
 #SBATCH --constraint={_processor()}
 #SBATCH --qos={self.msg.sbatchQueue}
-#SBATCH --tasks-per-node=32
-{_assert_project()}"""
+#SBATCH --tasks-per-node={self.msg.tasksPerNode}
+{sirepo.nersc.sbatch_project_option(self.msg.sbatchProject)}"""
             s = "--cpu-bind=cores shifter --entrypoint"
         m = "--mpi=pmi2" if pkconfig.channel_in("dev") else ""
         f = self.run_dir.join(self.jid + ".sbatch")
@@ -947,7 +957,7 @@ class _ReadJsonlStream(_Stream):
         super().__init__(*args)
 
     async def _read_stream(self):
-        self.text = await self._stream.read_until(b"\n", job.cfg.max_message_bytes)
+        self.text = await self._stream.read_until(b"\n", job.cfg().max_message_bytes)
         pkdc("cmd={} stdout={}", self.cmd, self.text[:1000])
         await self.cmd.on_stdout_read(self.text)
 
@@ -958,17 +968,17 @@ class _ReadUntilCloseStream(_Stream):
 
     async def _read_stream(self):
         t = await self._stream.read_bytes(
-            job.cfg.max_message_bytes - len(self.text),
+            job.cfg().max_message_bytes - len(self.text),
             partial=True,
         )
         pkdlog("cmd={} stderr={}", self.cmd, t)
         await self.cmd.on_stderr_read(t)
         l = len(self.text) + len(t)
         assert (
-            l < job.cfg.max_message_bytes
+            l < job.cfg().max_message_bytes
         ), "len(bytes)={} greater than max_message_size={}".format(
             l,
-            job.cfg.max_message_bytes,
+            job.cfg().max_message_bytes,
         )
         self.text.extend(t)
 

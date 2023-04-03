@@ -26,6 +26,16 @@ SIREPO.app.factory('beamlineService', function(appState, panelState, validationS
         self.dismissPopup();
     };
 
+    self.createWatchModel = itemId => {
+        const n = self.watchpointReportName(itemId);
+        if (! appState.models[n]) {
+            appState.models[n] = appState.setModelDefaults(
+                appState.cloneModel('initialIntensityReport'),
+                'watchpointReport',
+            );
+        }
+    };
+
     self.dismissPopup = function() {
         $('.srw-beamline-element-label').popover('hide');
     };
@@ -48,6 +58,10 @@ SIREPO.app.factory('beamlineService', function(appState, panelState, validationS
     };
 
     self.getReportTitle = function(modelName, itemId) {
+        if (modelName == 'initialIntensityReport'
+            && SIREPO.INITIAL_INTENSITY_REPORT_TITLE) {
+            return SIREPO.INITIAL_INTENSITY_REPORT_TITLE;
+        }
         var savedModelValues = appState.applicationState();
         if (itemId && savedModelValues.beamline) {
             for (var i = 0; i < savedModelValues.beamline.length; i += 1) {
@@ -92,6 +106,7 @@ SIREPO.app.factory('beamlineService', function(appState, panelState, validationS
             for (var i = 0; i < beamline.length; i++) {
                 if (beamline[i].type == 'watch') {
                     res.push(beamline[i]);
+                    self.createWatchModel(beamline[i].id);
                 }
             }
             return res;
@@ -281,8 +296,7 @@ SIREPO.app.directive('beamlineBuilder', function(appState, beamlineService, pane
                     newItem.firstFocusLength = newItem.position;
                 }
                 if (newItem.type == 'watch') {
-                    appState.models[beamlineService.watchpointReportName(newItem.id)] = appState.setModelDefaults(
-                        appState.cloneModel('initialIntensityReport'), 'watchpointReport');
+                    beamlineService.createWatchModel(newItem.id);
                 }
                 appState.models.beamline.push(newItem);
                 beamlineService.dismissPopup();

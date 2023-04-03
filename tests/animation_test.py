@@ -55,9 +55,11 @@ def test_jspec(fc):
         PKDict(
             # TODO(robnagler) these are sometimes off, just rerun
             beamEvolutionAnimation=PKDict(
+                frame_index=0,
                 expect_y_range=r"2.15e-06",
             ),
             coolingRatesAnimation=PKDict(
+                frame_index=0,
                 expect_x_range=r"0, 1\.0",
             ),
         ),
@@ -77,7 +79,7 @@ def test_madx(fc):
     )
 
 
-def test_ml(fc):
+def test_activait(fc):
     fc.sr_animation_run(
         fc.sr_sim_data("iris Dataset"),
         "animation",

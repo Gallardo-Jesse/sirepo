@@ -5,7 +5,6 @@ var srdbg = SIREPO.srdbg;
 
 SIREPO.app.config(function() {
     SIREPO.PLOTTING_SUMMED_LINEOUTS = true;
-    SIREPO.PLOTTING_SHOW_FWHM = true;
     SIREPO.appFieldEditors += [
         '<div data-ng-switch-when="ReflectivityMaterial" data-ng-class="fieldClass">',
           '<input data-reflectivity-material="" data-ng-model="model[field]" class="form-control" required />',
@@ -83,8 +82,12 @@ SIREPO.app.factory('shadowService', function(appState, beamlineService, panelSta
     };
 
     self.sendStatelessCompute = function(method, appState, callback, args) {
-        args.method = method;
-        requestSender.sendStatelessCompute(appState, callback, args);
+        requestSender.sendStatelessCompute(appState, callback,
+            {
+                method: method,
+                args: args,
+            }
+        );
     };
 
     self.initAutoTuneView = function(scope, watchFields, callback) {
@@ -131,9 +134,11 @@ SIREPO.app.controller('BeamlineController', function (appState, beamlineService)
     //TODO(pjm): also KB Mirror and  Monocromator
     self.toolbarItemNames = ['aperture', 'obstacle', 'emptyElement', 'crystal', 'grating', 'lens', 'crl', 'mirror', 'watch', 'zonePlate'];
     self.prepareToSave = function() {};
-    self.showBeamStatisticsReport = () =>
-        ['bendingMagnet', 'geometricSource', 'undulator'].indexOf(
-            appState.models.simulation.sourceType) >= 0;
+    self.showBeamStatisticsReport = () => {
+        return ['bendingMagnet', 'geometricSource', 'undulator'].indexOf(
+            appState.models.simulation.sourceType) >= 0
+            && appState.applicationState().beamline.length;
+    };
 });
 
 SIREPO.app.controller('SourceController', function(appState, shadowService) {
@@ -274,7 +279,7 @@ SIREPO.viewLogic('undulatorView', function(appState, panelState, shadowService, 
             return;
         }
         shadowService.sendStatelessCompute(
-            'compute_harmonic_photon_energy',
+            'harmonic_photon_energy',
             appState,
             function(data) {
                 if (appState.isLoaded()) {

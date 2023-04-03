@@ -4,6 +4,7 @@
 :copyright: Copyright (c) 202 RadiaSoft LLC.  All Rights Reserved.
 :license: http://www.apache.org/licenses/LICENSE-2.0.html
 """
+from pykern.pkcollections import PKDict
 from pykern.pkdebug import pkdc, pkdlog, pkdp
 import sirepo.sim_data
 
@@ -18,9 +19,22 @@ class SimData(sirepo.sim_data.SimDataBase):
         )
 
     @classmethod
-    def fixup_old_data(cls, data):
+    def fixup_old_data(cls, data, qcall, **kwargs):
         dm = data.models
-        cls._init_models(dm)
+        cls._init_models(
+            dm,
+            (
+                "dagmcAnimation",
+                "geometry3DReport",
+                "geometryInput",
+                "openmcAnimation",
+                "reflectivePlanes",
+                "settings",
+                "tallyReport",
+                "volumes",
+                "voxels",
+            ),
+        )
 
     @classmethod
     def _compute_job_fields(cls, data, *args, **kwargs):
@@ -28,6 +42,8 @@ class SimData(sirepo.sim_data.SimDataBase):
 
     @classmethod
     def _compute_model(cls, analysis_model, *args, **kwargs):
+        if analysis_model == "geometry3DReport":
+            return "dagmcAnimation"
         return analysis_model
 
     @classmethod

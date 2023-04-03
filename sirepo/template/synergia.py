@@ -23,7 +23,6 @@ import re
 import sirepo.const
 import sirepo.sim_data
 import sirepo.util
-import werkzeug
 
 
 _SIM_DATA, SIM_TYPE, SCHEMA = sirepo.sim_data.template_globals()
@@ -92,6 +91,14 @@ class SynergiaLatticeIterator(lattice.LatticeIterator):
             super(SynergiaLatticeIterator, self).end(model)
 
 
+def analysis_job_compute_particle_ranges(data, run_dir, **kwargs):
+    return template_common.compute_field_range(
+        data,
+        _compute_range_across_files,
+        run_dir,
+    )
+
+
 def background_percent_complete(report, run_dir, is_running):
     diag_file = run_dir.join(OUTPUT_FILE.beamEvolutionAnimation)
     if diag_file.exists():
@@ -129,14 +136,8 @@ def format_float(v):
     return float(format(v, ".10f"))
 
 
-def get_application_data(data, **kwargs):
-    if data.method == "compute_particle_ranges":
-        return template_common.compute_field_range(data, _compute_range_across_files)
-    assert False, "unknown application data method: {}".format(data.method)
-
-
-def import_file(req, tmp_dir=None, **kwargs):
-    f = pkcompat.from_bytes(req.file_stream.read())
+async def import_file(req, tmp_dir=None, **kwargs):
+    f = req.form_file.as_str()
     if re.search(r".madx$", req.filename, re.IGNORECASE):
         data = _import_madx_file(f)
     elif re.search(r".mad8$", req.filename, re.IGNORECASE):
@@ -208,7 +209,7 @@ def prepare_sequential_output_file(run_dir, data):
             save_sequential_report_data(data, run_dir)
 
 
-def python_source_for_model(data, model):
+def python_source_for_model(data, model, qcall, **kwargs):
     return _generate_parameters_file(data)
 
 
@@ -384,8 +385,8 @@ def sim_frame_turnComparisonAnimation(frame_args):
         }
 
 
-def stateless_compute_calculate_bunch_parameters(data):
-    return _calc_bunch_parameters(data.bunch)
+def stateless_compute_calculate_bunch_parameters(data, **kwargs):
+    return _calc_bunch_parameters(data.args.bunch)
 
 
 def validate_file(file_type, path):
@@ -472,7 +473,7 @@ def _calc_particle_info(bunch):
     bunch.charge = charge
 
 
-def _compute_range_across_files(run_dir, data):
+def _compute_range_across_files(run_dir, **kwargs):
     res = PKDict()
     for v in SCHEMA.enum.PhaseSpaceCoordinate6:
         res[v[0]] = []

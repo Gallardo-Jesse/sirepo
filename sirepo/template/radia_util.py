@@ -6,7 +6,6 @@
 """
 import numpy
 import radia
-import sirepo.util
 import sys
 
 
@@ -50,7 +49,6 @@ FIELD_UNITS = PKDict(
     }
 )
 
-
 _MU_0 = 4 * numpy.pi / 1e7
 _ZERO = [0, 0, 0]
 
@@ -78,34 +76,86 @@ class MPI:
         self._uti_mpi("barrier")
 
 
+def _apply_bevel(g_id, **kwargs):
+    d = PKDict(kwargs)
+    dirs = _calc_directions(d.cutAxis)
+
+    e = int(d.edge)
+    w_offset, h_offset = _bevel_offsets_for_axes(e, **dirs, **kwargs)
+
+    v = w_offset - h_offset
+    vx2 = numpy.dot(w_offset, w_offset)
+    vg2 = numpy.dot(h_offset, h_offset)
+    v2 = numpy.dot(v, v)
+
+    plane = int(d.cutRemoval) * (
+        numpy.array(dirs.widthDir) * [-1, 1, 1, -1][e] * numpy.sqrt(vg2 / v2)
+        + numpy.array(dirs.heightDir) * [1, 1, -1, -1][e] * numpy.sqrt(vx2 / v2)
+    )
+
+    # args are object id, point in plane, plane normal - returns array of new ids
+    return radia.ObjCutMag(
+        g_id,
+        (_corner_for_axes(e, **dirs, **kwargs) + w_offset).tolist(),
+        plane.tolist(),
+        "Frame->Lab",
+    )[0]
+
+
 def _apply_clone(g_id, xform):
     xform = PKDict(xform)
     # start with 'identity'
-    xf = radia.TrfTrsl([0, 0, 0])
+    total_xform = radia.TrfTrsl([0, 0, 0])
     for clone_xform in xform.transforms:
         cxf = PKDict(clone_xform)
-        if cxf.model == "translateClone":
-            txf = radia.TrfTrsl(
-                sirepo.util.split_comma_delimited_string(cxf.distance, float)
+        if cxf.type == "translate":
+            total_xform = radia.TrfCmbL(total_xform, radia.TrfTrsl(cxf.distance))
+        if cxf.type == "rotate":
+            total_xform = radia.TrfCmbL(
+                total_xform,
+                radia.TrfRot(
+                    cxf.center,
+                    cxf.axis,
+                    numpy.pi * float(cxf.angle) / 180.0,
+                ),
             )
-            xf = radia.TrfCmbL(xf, txf)
-        if cxf.model == "rotateClone":
-            rxf = radia.TrfRot(
-                sirepo.util.split_comma_delimited_string(cxf.center, float),
-                sirepo.util.split_comma_delimited_string(cxf.axis, float),
-                numpy.pi * float(cxf.angle) / 180.0,
-            )
-            xf = radia.TrfCmbL(xf, rxf)
     if xform.alternateFields != "0":
-        xf = radia.TrfCmbL(xf, radia.TrfInv())
-    radia.TrfMlt(g_id, xf, xform.numCopies + 1)
+        total_xform = radia.TrfCmbL(total_xform, radia.TrfInv())
+    radia.TrfMlt(g_id, total_xform, xform.numCopies + 1)
 
 
-def _clone_with_translation(g_id, num_copies, distance, alternate_fields):
-    xf = radia.TrfTrsl(distance)
-    if alternate_fields:
-        xf = radia.TrfCmbL(xf, radia.TrfInv())
-    radia.TrfMlt(g_id, xf, num_copies + 1)
+def _apply_fillet(g_id, **kwargs):
+    d = PKDict(kwargs)
+
+    dirs = _calc_directions(d.cutAxis)
+    cut_amts = PKDict(
+        amountVert=d.radius,
+        amountHoriz=d.radius,
+    )
+    g_id = _apply_bevel(
+        g_id,
+        cutRemoval=1,
+        **cut_amts,
+        **kwargs,
+    )
+    w_offset, h_offset = _bevel_offsets_for_axes(
+        int(d.edge), **dirs, **cut_amts, **kwargs
+    )
+    ctr = (
+        _corner_for_axes(int(d.edge), **dirs, **kwargs)
+        + w_offset
+        + h_offset
+        - (numpy.array(d.size) / 2) * dirs.lenDir
+    )
+    c_id = build_cylinder(
+        extrusion_axis=d.cutAxis,
+        center=ctr,
+        num_sides=d.numSides,
+        seg_type="pln",
+        **{k: v for k, v in kwargs.items() if k != "center"},
+    )
+    c_id = _apply_bevel(c_id, cutRemoval=-1, **cut_amts, **kwargs)
+    return build_container([g_id, c_id])
 
 
 def _apply_rotation(g_id, xform):
@@ -113,22 +163,43 @@ def _apply_rotation(g_id, xform):
     radia.TrfOrnt(
         g_id,
         radia.TrfRot(
-            sirepo.util.split_comma_delimited_string(xform.center, float),
-            sirepo.util.split_comma_delimited_string(xform.axis, float),
+            (
+                _geom_bounds(g_id)
+                if xform.get("useObjectCenter", "0") == "1"
+                else xform
+            ).center,
+            xform.axis,
             numpy.pi * float(xform.angle) / 180.0,
         ),
     )
 
 
-def _apply_segments(g_id, segments):
+def _apply_segments(g_id, segments, seg_type="pln", **kwargs):
     if segments and any([s > 1 for s in segments]):
-        radia.ObjDivMag(g_id, segments)
+        if seg_type == "pln":
+            radia.ObjDivMag(g_id, segments)
+        # cylindrical division does not seem to work properly in the local frame if the
+        # axis is not "x" and the center is not [0, 0, 0]
+        if seg_type == "cyl":
+            d = PKDict(kwargs)
+            radia.ObjDivMag(
+                g_id,
+                segments,
+                seg_type,
+                [
+                    d.center,
+                    d.axis,
+                    d.perp_axis,
+                    1.0,
+                ],
+                "Frame->Lab",
+            )
 
 
 def _apply_symmetry(g_id, xform):
     xform = PKDict(xform)
-    plane = sirepo.util.split_comma_delimited_string(xform.symmetryPlane, float)
-    point = sirepo.util.split_comma_delimited_string(xform.symmetryPoint, float)
+    plane = xform.symmetryPlane
+    point = xform.symmetryPoint
     if xform.symmetryType == "parallel":
         radia.TrfZerPara(g_id, point, plane)
     if xform.symmetryType == "perpendicular":
@@ -139,15 +210,59 @@ def _apply_translation(g_id, xform):
     xform = PKDict(xform)
     radia.TrfOrnt(
         g_id,
-        radia.TrfTrsl(sirepo.util.split_comma_delimited_string(xform.distance, float)),
+        radia.TrfTrsl(xform.distance),
+    )
+
+
+def axes_index(axis):
+    return AXES.index(axis)
+
+
+def _bevel_offsets_for_axes(edge_index, **kwargs):
+    d = PKDict(kwargs)
+    return (
+        d.amountHoriz * numpy.array(d.widthDir) * [1, -1, -1, 1][edge_index],
+        d.amountVert * numpy.array(d.heightDir) * [-1, -1, 1, 1][edge_index],
+    )
+
+
+def _calc_directions(axis):
+    w = next_axis(axis)
+    h = next_axis(w)
+    return PKDict(
+        lenDir=AXIS_VECTORS[axis],
+        widthDir=AXIS_VECTORS[w],
+        heightDir=AXIS_VECTORS[h],
+    )
+
+
+def _clone_with_translation(g_id, num_copies, distance, alternate_fields):
+    xf = radia.TrfTrsl(distance)
+    if alternate_fields:
+        xf = radia.TrfCmbL(xf, radia.TrfInv())
+    radia.TrfMlt(g_id, xf, num_copies + 1)
+
+
+# edge_index starts at the top left - meaning minimum width coordinate and maximum height
+# coordinate in the plane defined by the length direction - proceeding clockwise
+def _corner_for_axes(edge_index, **kwargs):
+    d = PKDict(kwargs)
+    l = numpy.array(d.lenDir)
+    h = numpy.array(d.heightDir)
+    w = numpy.array(d.widthDir)
+    return (
+        numpy.array(d.center)
+        + numpy.array(d.size)
+        / 2
+        * [-w + h + l, w + h + l, w - h + l, -w - h + l][edge_index]
     )
 
 
 def _geom_bounds(g_id):
     bnds = radia.ObjGeoLim(g_id)
     return PKDict(
-        center=[0.5 * (bnds[i + 1] + bnds[i]) for i in range(3)],
-        size=[abs(bnds[i + 1] - bnds[i]) for i in range(3)],
+        center=[bnds[2 * i] + (bnds[2 * i + 1] - bnds[2 * i]) / 2 for i in range(3)],
+        size=[abs(bnds[2 * i + 1] - bnds[2 * i]) for i in range(3)],
     )
 
 
@@ -159,40 +274,19 @@ def _radia_material(material_type, magnetization_magnitude, h_m_curve):
     return radia.MatStd(material_type, magnetization_magnitude)
 
 
+_MODS = PKDict(
+    objectBevel=_apply_bevel,
+    objectFillet=_apply_fillet,
+    rotate=_apply_rotation,
+    translate=_apply_translation,
+)
+
 _TRANSFORMS = PKDict(
     cloneTransform=_apply_clone,
     symmetryTransform=_apply_symmetry,
     rotate=_apply_rotation,
     translate=_apply_translation,
 )
-
-
-# TODO(mvk): simplify input params with dict/kwargs, clarify the edge-indexed arrays
-def apply_bevel(g_id, obj_ctr, obj_size, bevel):
-
-    b = numpy.array(bevel.cutDir)
-    g = numpy.array(bevel.heightDir)
-    x = numpy.array(bevel.widthDir)
-    sz = numpy.array(obj_size)
-    ctr = numpy.array(obj_ctr)
-    e = int(bevel.edge)
-    half_size = sz / 2
-    corner = ctr + half_size * [-x + g + b, x + g + b, x - g + b, -x - g + b][e]
-    w_offset = bevel.amountHoriz * x * [1, -1, -1, 1][e]
-    h_offset = bevel.amountVert * g * [-1, -1, 1, 1][e]
-
-    v = w_offset - h_offset
-    vx2 = numpy.dot(w_offset, w_offset)
-    vg2 = numpy.dot(h_offset, h_offset)
-    v2 = numpy.dot(v, v)
-
-    plane = x * [-1, 1, 1, -1][e] * numpy.sqrt(vg2 / v2) + g * [1, 1, -1, -1][
-        e
-    ] * numpy.sqrt(vx2 / v2)
-    pt = corner + w_offset
-
-    # object id, plane normal, point in plane - returns a new id in an array for some reason
-    return radia.ObjCutMag(g_id, pt.tolist(), plane.tolist())[0]
 
 
 def apply_color(g_id, color):
@@ -203,8 +297,16 @@ def multiply_vector_by_matrix(v, m):
     return numpy.array(m).dot(numpy.array(v)).tolist()
 
 
-def apply_transform(g_id, xform):
-    _TRANSFORMS[xform["model"]](g_id, xform)
+def apply_transform(g_id, **kwargs):
+    _TRANSFORMS[kwargs["type"]](g_id, kwargs)
+
+
+def apply_modification(g_id, **kwargs):
+    return _MODS[kwargs["type"]](g_id, **kwargs)
+
+
+def build_container(g_ids):
+    return radia.ObjCnt(g_ids)
 
 
 def build_cuboid(**kwargs):
@@ -215,8 +317,39 @@ def build_cuboid(**kwargs):
     return g_id
 
 
-def build_container(g_ids):
-    return radia.ObjCnt(g_ids)
+def build_stl(**kwargs):
+    d = PKDict(kwargs)
+    g_id = radia.ObjPolyhdr(
+        d.vertices, (numpy.array(d.faces) + 1).tolist(), d.magnetization
+    )
+    center = [x - d.centroid[i] for i, x in enumerate(d.center)]
+    radia.TrfOrnt(g_id, radia.TrfTrsl([center[0], center[1], center[2]]))
+    _apply_segments(g_id, d.segments)
+    radia.MatApl(g_id, _radia_material(d.material, d.rem_mag, d.h_m_curve))
+    return g_id
+
+
+def build_cylinder(**kwargs):
+    d = PKDict(kwargs)
+    axis = d.extrusion_axis
+    g_id = radia.ObjCylMag(
+        d.center,
+        d.radius,
+        d.size[axes_index(axis)],
+        d.num_sides,
+        d.extrusion_axis,
+        d.magnetization,
+    )
+    _apply_segments(
+        g_id,
+        d.segments,
+        seg_type=d.get("seg_type", "cyl"),
+        center=d.center,
+        axis=AXIS_VECTORS[axis].tolist(),
+        perp_axis=(d.radius * AXIS_VECTORS[next_axis(axis)] + d.center).tolist(),
+    )
+    radia.MatApl(g_id, _radia_material(d.material, d.rem_mag, d.h_m_curve))
+    return g_id
 
 
 def build_racetrack(**kwargs):
@@ -325,6 +458,40 @@ def get_geom_tree(g_id, recurse_depth=0):
     return g_arr
 
 
+# Radia expects the electron to travel in the y direction so we must rotate all the
+# fields such that the simulation's beam axis points along y.
+# The resulting trajectory is of the form
+#   [[y0, x0, dx/dy0, z0, dz/dy0], [y1, x1, dx/dy1, z1, dz/dy1],...]
+# where x/z is the width/height direction and y is the beam direction
+def get_electron_trajectory(g_id, **kwargs):
+    d = PKDict(kwargs)
+    axis = d.rotation.as_rotvec(degrees=True)
+    angle = numpy.linalg.norm(axis)
+    # Identity Rotations produce a degenerate (all 0s) axis
+    if any(axis):
+        _apply_rotation(
+            g_id,
+            PKDict(
+                center="0,0,0",
+                axis=axis,
+                angle=angle,
+            ),
+        )
+    p = d.rotation.apply(d.pos)
+    a = d.rotation.apply(d.angles)
+    t = radia.FldPtcTrj(
+        g_id,
+        d.energy,
+        [p[0], a[0], p[2], a[2]],
+        [p[1], d.y_final],
+        d.num_points,
+    )
+    tt = numpy.array(t).T
+    tcx = d.rotation.inv().apply(numpy.array([tt[1], tt[0], tt[3]]).T).T
+    # ignore angles for now
+    return tcx
+
+
 # path is *flattened* array of positions in space ([x1, y1, z1,...xn, yn, zn])
 def get_field(g_id, f_type, path):
     if len(path) == 0:
@@ -385,6 +552,10 @@ def new_geom_object():
         polygons=PKDict(colors=[], lengths=[], vertices=[]),
         vectors=PKDict(directions=[], magnitudes=[], vertices=[]),
     )
+
+
+def next_axis(axis):
+    return AXES[(AXES.index(axis) + 1) % len(AXES)]
 
 
 def reset():

@@ -24,7 +24,6 @@ import tornado.ioloop
 
 
 class SbatchDriver(job_driver.DriverBase):
-
     cfg = None
 
     _KNOWN_HOSTS = None
@@ -171,8 +170,6 @@ disown
                     write_to_log(
                         o, e, f"remote-{'before' if before_start else 'after'}-start"
                     )
-            except sirepo.util.ASYNC_CANCELED_ERROR:
-                raise
             except Exception as e:
                 pkdlog(
                     "{} e={} stack={}",

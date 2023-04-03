@@ -5,22 +5,24 @@
 :license: http://www.apache.org/licenses/LICENSE-2.0.html
 """
 from pykern import pkio
-from pykern import pksubprocess
 from pykern.pkcollections import PKDict
 from pykern.pkdebug import pkdp, pkdlog
 from sirepo.template import template_common
 import array
 import copy
-import io
 import json
 import os
+import py.path
+import pymoab.core
+import pymoab.types
 import re
 import sirepo.sim_data.cloudmc
 import sirepo.simulation_db
 import sirepo.template.cloudmc
-import subprocess
+import sirepo.util
 import uuid
-import zipfile
+
+import sirepo.template.cloudmc as template
 
 
 _DATA_DIR = "data"
@@ -78,6 +80,12 @@ def extract_dagmc(dagmc_filename):
     return mat
 
 
+def run(cfg_dir):
+    template_common.exec_parameters()
+    data = sirepo.simulation_db.read_json(template_common.INPUT_BASE_NAME)
+    template.extract_report_data(pkio.py_path(cfg_dir), data)
+
+
 def run_background(cfg_dir):
     data = sirepo.simulation_db.read_json(
         template_common.INPUT_BASE_NAME,
@@ -108,35 +116,34 @@ def _assert_size(res, name):
 
 def _extract_volumes(filename):
     res = PKDict()
-    entities = _parse_volumes(filename)
     visited = PKDict()
-    for e in entities.values():
-        if e.CATEGORY == "Group":
-            name = _parse_entity_name(e.NAME)
-            if not name:
-                continue
-            vol_ids = []
-            for i in e.volumes:
-                vol_ids.append(entities[i].GLOBAL_ID)
+    for v in _parse_volumes(filename).values():
+        name = _parse_entity_name(v.name)
+        if not name:
+            continue
+        skip_volume = False
+        for i in v.volumes:
+            if i in visited:
+                pkdlog(f"skipping volume used in multiple groups: {i} {name}")
+                skip_volume = True
+            visited[i] = True
+        if skip_volume:
+            continue
+        if not res.get(name):
             res[name] = PKDict(
-                volId=vol_ids[0],
+                volId=v.volumes[0],
+                volumes=v.volumes,
             )
-            for i in vol_ids:
-                if i in visited:
-                    raise AssertionError(f"volume used in multiple groups: {i} {e}")
-                visited[i] = True
-            os.system(f'mbconvert -v {",".join(vol_ids)} {filename} {vol_ids[0]}.vtk')
+        else:
+            res[name].volumes += v.volumes
+            res[name].volId = v.volumes[0]
+
+    for n in res:
+        os.system(
+            f'mbconvert -v {",".join(res[n].volumes)} {filename} {res[n].volId}.vtk'
+        )
+        del res[n]["volumes"]
     return res
-
-
-def _parse_attr(name, line, entity=None):
-    m = re.search(f"^\s*{name} =?\s*(.*?)$", line)
-    if m:
-        v = m.group(1)
-        if entity is not None:
-            entity[name] = v.strip()
-        return True
-    return False
 
 
 def _parse_entity_name(name):
@@ -146,44 +153,31 @@ def _parse_entity_name(name):
     return None
 
 
-def _parse_entity_set(entity_set):
-    m = re.search("^(\d+) \- (\d+)$", entity_set)
-    if m:
-        return [str(x) for x in range(int(m.group(1)), int(m.group(2)) + 1)]
-    assert re.search("^(\d+)$", entity_set)
-    return [entity_set]
-
-
 def _parse_volumes(filename):
+    def get_tag_value(mb, tag, handle):
+        return str(mb.tag_get_data(tag, handle).flat[0])
+
+    mb = pymoab.core.Core()
+    mb.load_file(filename)
+    name_h = mb.tag_get_handle(pymoab.types.NAME_TAG_NAME)
+    id_h = mb.tag_get_handle(pymoab.types.GLOBAL_ID_TAG_NAME)
     res = PKDict()
-    e = None
-    # using subprocess not pksubprocess because we don't want to read in all
-    # the output at once which can be hundreds of megabytes
-    p = subprocess.Popen(["mbsize", "-ll", filename], stdout=subprocess.PIPE)
-    for line in io.TextIOWrapper(p.stdout, encoding="ascii"):
-        if e and re.search("^\s*$", line):
-            if "CATEGORY" in e:
-                res[e.MBENTITYSET] = e
-            e = None
+    for group in mb.get_entities_by_type_and_tag(
+        mb.get_root_set(),
+        pymoab.types.MBENTITYSET,
+        [mb.tag_get_handle(pymoab.types.CATEGORY_TAG_NAME)],
+        ["Group"],
+    ):
+        name = get_tag_value(mb, name_h, group)
+        if not re.search(r"^mat:", name):
             continue
-        if _parse_attr("MBENTITYSET", line):
-            assert e is None
-            e = PKDict(volumes=[])
-            assert _parse_attr("MBENTITYSET", line, e)
-            continue
-        if not e:
-            continue
-        if _parse_attr("GLOBAL_ID", line, e):
-            continue
-        if _parse_attr("EntitySet", line, e):
-            e.volumes += _parse_entity_set(e.EntitySet)
-            continue
-        if _parse_attr("CATEGORY", line, e):
-            if e.CATEGORY not in ("Volume", "Group"):
-                e = None
-            continue
-        if _parse_attr("NAME", line, e):
-            continue
+        assert not res.get(group)
+        res[group] = PKDict(
+            name=name,
+            volumes=[],
+        )
+        for volume in mb.get_entities_by_handle(group):
+            res[group].volumes.append(get_tag_value(mb, id_h, volume))
     return res
 
 
@@ -257,48 +251,9 @@ def _vtk_to_bin(vol_id):
         vti[n].ref.id = fn
         vti[n].size = int(len(v[n]))
         fns.append(f"{_DATA_DIR}/{fn}")
-    with zipfile.ZipFile(f"{vol_id}.zip", "w") as f:
+    with sirepo.util.write_zip(f"{vol_id}.zip") as f:
         f.writestr("index.json", json.dumps(vti))
         for fn in fns:
             f.write(fn)
     pkio.unchecked_remove(_DATA_DIR)
     pkio.unchecked_remove(filename)
-
-
-# TODO(pjm): when pymoab is available, replace the mbsize parsing with something like this
-
-# from pykern.pkcollections import PKDict
-# from pymoab import core, types
-# import re
-# import sys
-
-# def get_volumes_by_group(filename):
-
-#     def get_tag_value(mb, tag, handle):
-#         return mb.tag_get_data(tag, handle).flat[0]
-
-#     mb = core.Core()
-#     mb.load_file(filename)
-#     name_h = mb.tag_get_handle(types.NAME_TAG_NAME)
-#     id_h = mb.tag_get_handle(types.GLOBAL_ID_TAG_NAME)
-#     res = PKDict()
-#     for group in mb.get_entities_by_type_and_tag(
-#         mb.get_root_set(),
-#         types.MBENTITYSET,
-#         [mb.tag_get_handle(types.CATEGORY_TAG_NAME)],
-#         ['Group'],
-#     ):
-#         name = get_tag_value(mb, name_h, group)
-#         if not re.search(r'^mat:', name):
-#             continue
-#         assert not res.get(group)
-#         res[group] = PKDict(
-#             name=name,
-#             volumes=[],
-#         )
-#         for volume in mb.get_entities_by_handle(group):
-#             res[group].volumes.append(get_tag_value(mb, id_h, volume))
-#     return res
-
-# assert len(sys.argv) == 2, f'usage: python {sys.argv[0]} <filename>'
-# res = get_volumes_by_group(sys.argv[1])

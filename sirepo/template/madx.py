@@ -134,6 +134,7 @@ _TFS_FILE_EXTENSION = "tfs"
 
 _TWISS_OUTPUT_FILE = f"twiss.{_TFS_FILE_EXTENSION}"
 
+
 # TODO(pjm): this is only a start on the MAD-X LibAdapter
 class LibAdapter(sirepo.lib.LibAdapterBase):
     def parse_file(self, path):
@@ -352,8 +353,8 @@ def get_data_file(run_dir, model, frame, options):
     assert False, f"no data file for model: {model}"
 
 
-def import_file(req, **kwargs):
-    text = pkcompat.from_bytes(req.file_stream.read())
+async def import_file(req, **kwargs):
+    text = req.form_file.as_str()
     if not bool(re.search(r"\.madx$|\.seq$", req.filename, re.IGNORECASE)):
         raise AssertionError("invalid file extension, expecting .madx or .seq")
     data = madx_parser.parse_file(text, downcase_variables=True)
@@ -364,13 +365,13 @@ def import_file(req, **kwargs):
     return data
 
 
-def post_execution_processing(success_exit=True, run_dir=None, **kwargs):
+def post_execution_processing(success_exit, run_dir, **kwargs):
     if success_exit:
         return None
     return _parse_madx_log(run_dir)
 
 
-def prepare_for_client(data):
+def prepare_for_client(data, qcall, **kwargs):
     code_var(data.models.rpnVariables).compute_cache(data, SCHEMA)
     return data
 
@@ -393,7 +394,7 @@ def prepare_sequential_output_file(run_dir, data):
 
 
 # TODO(e-carlin): fixme - I don't return python
-def python_source_for_model(data, model):
+def python_source_for_model(data, model, qcall, **kwargs):
     return generate_parameters_file(data)
 
 
@@ -411,8 +412,10 @@ def save_sequential_report_data(data, run_dir):
     )
 
 
-def stateless_compute_calculate_bunch_parameters(data):
-    return _calc_bunch_parameters(data.bunch, data.command_beam, data.variables)
+def stateless_compute_calculate_bunch_parameters(data, **kwargs):
+    return _calc_bunch_parameters(
+        data.args.bunch, data.args.command_beam, data.args.variables
+    )
 
 
 def to_float(value):

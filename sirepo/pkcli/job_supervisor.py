@@ -14,11 +14,13 @@ import copy
 import functools
 import importlib
 import signal
+import sirepo.const
 import sirepo.events
 import sirepo.feature_config
 import sirepo.job
 import sirepo.job_driver
 import sirepo.job_supervisor
+import sirepo.modules
 import sirepo.sim_db_file
 import sirepo.srdb
 import sirepo.srtime
@@ -38,10 +40,9 @@ def default_command():
     cfg = pkconfig.init(
         debug=(pkconfig.channel_in("dev"), bool, "run supervisor in debug mode"),
         ip=(sirepo.job.DEFAULT_IP, str, "ip to listen on"),
-        port=(sirepo.job.DEFAULT_PORT, int, "what port to listen on"),
+        port=(sirepo.const.PORT_DEFAULTS.supervisor, int, "what port to listen on"),
     )
-    sirepo.srtime.init()
-    sirepo.job_supervisor.init()
+    sirepo.modules.import_and_init("sirepo.job_supervisor")
     pkio.mkdir_parent(sirepo.job.DATA_FILE_ROOT)
     pkio.mkdir_parent(sirepo.job.LIB_FILE_ROOT)
     app = tornado.web.Application(
@@ -58,9 +59,9 @@ def default_command():
         static_path=sirepo.job.SUPERVISOR_SRV_ROOT.join(sirepo.job.LIB_FILE_URI),
         # tornado expects a trailing slash
         static_url_prefix=sirepo.job.LIB_FILE_URI + "/",
-        websocket_max_message_size=sirepo.job.cfg.max_message_bytes,
-        websocket_ping_interval=sirepo.job.cfg.ping_interval_secs,
-        websocket_ping_timeout=sirepo.job.cfg.ping_timeout_secs,
+        websocket_max_message_size=sirepo.job.cfg().max_message_bytes,
+        websocket_ping_interval=sirepo.job.cfg().ping_interval_secs,
+        websocket_ping_timeout=sirepo.job.cfg().ping_timeout_secs,
     )
     if cfg.debug:
         for f in sirepo.util.files_to_watch_for_reload("json", "py"):
@@ -69,7 +70,7 @@ def default_command():
     server = tornado.httpserver.HTTPServer(
         app,
         xheaders=True,
-        max_buffer_size=sirepo.job.cfg.max_message_bytes,
+        max_buffer_size=sirepo.job.cfg().max_message_bytes,
     )
     server.listen(cfg.port, cfg.ip)
     signal.signal(signal.SIGTERM, _sigterm)
@@ -154,7 +155,7 @@ class _ServerReq(_JsonPostRequestHandler):
 
 
 class _ServerSrtime(_JsonPostRequestHandler):
-    def post(self):
+    async def post(self):
         assert (
             pkconfig.channel_in_internal_test()
         ), "You can only adjust time in internal test"

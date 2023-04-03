@@ -375,7 +375,7 @@ SIREPO.app.controller('VisualizationController', function (appState, commandServ
             '<simulation_id>': appState.models.simulation.simulationId,
             '<simulation_type>': SIREPO.APP_SCHEMA.simulationType,
             '<model>': self.simState.model,
-            '<frame>': -1,
+            '<frame>': SIREPO.nonDataFileFrame,
         });
     };
 
@@ -717,8 +717,8 @@ SIREPO.app.directive('beamline3d', function(appState, geometry, panelState, plot
                     const idx = geometry.basis.indexOf(dim);
                     $scope.axisCfg[dim] = {
                         label: dim + ' [m]',
-                        min: pb[idx * 2 + (dim == 'z' ? 1 : 0)],
-                        max: pb[idx * 2 + 1 + (dim == 'z' ? -1 : 0)],
+                        min: pb[idx * 2],
+                        max: pb[idx * 2 + 1],
                         numPoints: 2,
                         screenDim: dim == 'x' ? 'y' : 'x',
                         showCentral: dim === appState.models.simulation.beamAxis,
