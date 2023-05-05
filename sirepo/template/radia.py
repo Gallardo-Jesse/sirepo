@@ -1588,12 +1588,12 @@ def _update_undulatorHybrid(model, assembly, qcall=None, **kwargs):
     _update_geom_obj(
         assembly.halfPole, center=pos + sz / 2 + gap_half_height, size=sz, qcall=qcall
     )
-    pos += sz * d.length_dir
+    pos = pos + sz * d.length_dir + model.airGap * d.length_dir
 
     sz = (
         mag_x[0] / 2 * d.width_dir
         + mag_x[1] * d.height_dir
-        + (model.periodLength / 2 - model.poleLength) * d.length_dir
+        + (model.periodLength / 2 - model.poleLength - model.airGap) * d.length_dir
     )
     _update_geom_obj(
         assembly.magnet,
@@ -1601,7 +1601,7 @@ def _update_undulatorHybrid(model, assembly, qcall=None, **kwargs):
         size=sz,
         qcall=qcall,
     )
-    pos += sz * d.length_dir
+    pos = pos + sz * d.length_dir + model.airGap * d.length_dir
 
     sz = (
         pole_x[0] / 2 * d.width_dir
@@ -1638,7 +1638,7 @@ def _update_undulatorHybrid(model, assembly, qcall=None, **kwargs):
             _build_clone_xform(
                 model.numPeriods - 1,
                 True,
-                [_build_translate_clone(model.periodLength / 2 * d.length_dir)],
+                [_build_translate_clone(model.periodLength / 2 * d.length_dir + model.airGap * d.length_dir)],
             )
         ]
     )
