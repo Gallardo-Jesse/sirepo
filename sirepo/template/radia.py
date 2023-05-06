@@ -1615,7 +1615,7 @@ def _update_undulatorHybrid(model, assembly, qcall=None, **kwargs):
         qcall=qcall,
     )
 
-    pos = (model.poleLength + model.numPeriods * model.periodLength) / 2 * d.length_dir
+    pos = ((model.poleLength + model.numPeriods * model.periodLength) / 2 + model.numPeriods * model.airGap) * d.length_dir
     for t in model.terminations:
         o = t.object
         m = assembly.groupedObjects.get("terminationGroup", [])

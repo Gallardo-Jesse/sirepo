@@ -2133,6 +2133,7 @@ SIREPO.app.directive('radiaViewer', function(appState, errorService, frameCache,
 
             function buildScene() {
                 // scene -> multiple data -> multiple actors
+                srdbg(sceneData);
                 let name = sceneData.name;
                 let data = sceneData.data;
 
