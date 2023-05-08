@@ -4,34 +4,28 @@
 :copyright: Copyright (c) 2018 RadiaSoft LLC.  All Rights Reserved.
 :license: http://www.apache.org/licenses/LICENSE-2.0.html
 """
+# NOTE: limit sirepo imports here
 from pykern import pkcompat
 from pykern import pkconfig
 from pykern.pkcollections import PKDict
 from pykern.pkdebug import pkdlog, pkdp, pkdexc, pkdc
-import asyncio
 import base64
-import concurrent.futures
 import hashlib
 import importlib
 import inspect
 import numconv
-import posixpath
 import pykern.pkinspect
 import pykern.pkio
 import pykern.pkjson
 import re
 import random
 import six
-import sys
 import threading
 import unicodedata
 import zipfile
 
 
-cfg = None
-
-#: All types of errors async code may throw when canceled
-ASYNC_CANCELED_ERROR = (asyncio.CancelledError, concurrent.futures.CancelledError)
+_cfg = None
 
 #: Http auth header name
 AUTH_HEADER = "Authorization"
@@ -245,9 +239,9 @@ def assert_sim_type(sim_type):
 
 
 def create_token(value):
-    if pkconfig.channel_in_internal_test() and cfg.create_token_secret:
+    if pkconfig.channel_in_internal_test() and _cfg.create_token_secret:
         v = base64.b32encode(
-            hashlib.sha256(pkcompat.to_bytes(value + cfg.create_token_secret)).digest()
+            hashlib.sha256(pkcompat.to_bytes(value + _cfg.create_token_secret)).digest()
         )
         return pkcompat.from_bytes(v[:TOKEN_SIZE])
     return random_base62(TOKEN_SIZE)
@@ -260,8 +254,6 @@ def err(obj, fmt="", *args, **kwargs):
 def files_to_watch_for_reload(*extensions):
     from sirepo import feature_config
 
-    if not pkconfig.channel_in("dev"):
-        return []
     for e in extensions:
         for p in sorted(set(["sirepo", *feature_config.cfg().package_path])):
             d = pykern.pkio.py_path(
@@ -301,7 +293,7 @@ def import_submodule(submodule, type_or_data):
     from sirepo import feature_config
     from sirepo import template
 
-    t = template.assert_sim_type(
+    sim_type = template.assert_sim_type(
         type_or_data.simulationType
         if isinstance(
             type_or_data,
@@ -309,17 +301,22 @@ def import_submodule(submodule, type_or_data):
         )
         else type_or_data,
     )
-    r = feature_config.cfg().package_path
-    for p in r:
+    for p in feature_config.cfg().package_path:
+        n = None
         try:
-            return importlib.import_module(f"{p}.{submodule}.{t}")
-        except ModuleNotFoundError:
+            n = f"{p}.{submodule}.{sim_type}"
+            return importlib.import_module(n)
+        except ModuleNotFoundError as e:
+            if n is not None and n != e.name:
+                # import is failing due to ModuleNotFoundError in a sub-import
+                # not the module we are looking for
+                raise
             s = pkdexc()
             pass
     # gives more debugging info (perhaps more confusion)
     pkdc(s)
     raise AssertionError(
-        f"cannot find submodule={submodule} for sim_type={t} in package_path={r}"
+        f"cannot find submodule={submodule} for sim_type={sim_type} in package_path={feature_config.cfg().package_path}"
     )
 
 
@@ -491,6 +488,6 @@ def write_zip(path):
     )
 
 
-cfg = pkconfig.init(
+_cfg = pkconfig.init(
     create_token_secret=("oh so secret!", str, "used for internal test only"),
 )

@@ -138,7 +138,7 @@ angular.element(document).ready(function() {
         error: function(xhr, status, err) {
             if (! SIREPO.APP_SCHEMA) {
                 srlog("schema load failed: ", err);
-                if (err.match(/forbidden/i)) {
+                if (err.toString().match(/forbidden/i)) {
                     window.location.href = "/forbidden";
                     return;
                 }
@@ -883,7 +883,7 @@ SIREPO.app.factory('appState', function(errorService, fileManager, requestQueue,
         return SIREPO.APP_SCHEMA.view[name] || SIREPO.APP_SCHEMA.common.view[name];
     };
 
-    self.watchModelFields = function($scope, modelFields, callback) {
+    self.watchModelFields = function($scope, modelFields, callback, useDeepEquals=false) {
         $scope.appState = self;
         modelFields.forEach(function(f) {
             // allows watching fields when creating a new simulation (isLoaded() returns false)
@@ -894,7 +894,7 @@ SIREPO.app.factory('appState', function(errorService, fileManager, requestQueue,
                     // call in next cycle to allow UI to change layout first
                     $interval(callback, 1, 1, true, f);
                 }
-            });
+            }, useDeepEquals);
         });
     };
 
@@ -2733,6 +2733,7 @@ SIREPO.app.factory('persistentSimulation', function(simulationQueue, appState, a
             isReadyForModelChanges: false,
             model: controller.simComputeModel || appState.appService.computeModel(controller.simAnalysisModel || null),
             percentComplete: 0,
+            queueState: null,
             simulationQueueItem: null,
             timeData: {},
         };
@@ -2754,6 +2755,9 @@ SIREPO.app.factory('persistentSimulation', function(simulationQueue, appState, a
             }
             if (data.hasOwnProperty('percentComplete')) {
                 state.percentComplete = data.percentComplete;
+            }
+            if (data.hasOwnProperty('queueState')) {
+                state.queueState = data.queueState;
             }
             if (state.isProcessing()) {
                 state.dots += '.';
@@ -2858,6 +2862,13 @@ SIREPO.app.factory('persistentSimulation', function(simulationQueue, appState, a
                 return 100;
             }
             return state.percentComplete;
+        };
+
+        state.getQueueState = function() {
+            if (state.queueState) {
+                return stringsService.ucfirst(state.queueState);
+            }
+            return state.stateAsText();
         };
 
         state.hasFrames = function() {
@@ -3573,6 +3584,9 @@ SIREPO.app.controller('LoginWithController', function (authState, errorService, 
     else if (m == 'email') {
         // handled by the emailLogin directive
     }
+    else if (m == 'ldap') {
+        // created ldapLogin directive
+    }
     else {
         self.msg = '';
         errorService.alertText('Incorrect or invalid login method: ' + (m || '<none>'));
@@ -3797,14 +3811,6 @@ SIREPO.app.controller('SimulationsController', function (appState, cookieService
                 appState.autoSave(clearModels, errorCallback);
                 self.selectedItem = null;
             });
-    }
-
-    function beginSession() {
-        requestSender.sendRequest(
-            'beginSession',
-            () => {},
-            {simulationType: SIREPO.APP_SCHEMA.simulationType}
-            );
     }
 
     self.canDelete = function(item) {

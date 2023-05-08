@@ -52,6 +52,10 @@
             "longName": "Raydata",
             "shortName": "Raydata"
         },
+        "rshellweg": {
+            "longName": "RSHellweg",
+            "shortName": "RSHellweg"
+        },
         "shadow": {
             "longName": "SHADOW",
             "shortName": "SHADOW"
@@ -63,10 +67,6 @@
         "srw": {
             "longName": "Synchrotron Radiation Workshop",
             "shortName": "SRW"
-        },
-        "synergia": {
-            "longName": "Synergia",
-            "shortName": "Synergia"
         },
         "warppba": {
             "longName": "Warp PBA",
@@ -109,6 +109,7 @@
         "authGithubAuthorized": "/auth-github-authorized",
         "authGithubLogin": "/auth-github-login/<simulation_type>",
         "authGuestLogin": "/auth-guest-login/<simulation_type>",
+        "authLdapLogin": "/auth-ldap-login",
         "authLogout": "/auth-logout/?<simulation_type>",
         "authState": "/auth-state",
         "authState2": "/auth-state2",
@@ -126,6 +127,7 @@
         "exportJupyterNotebook": "/export-jupyter-notebook/<simulation_type>/<simulation_id>/?<model>/?<title>",
         "exportJupyterNotebook2": "/export-jupyter-notebook2/<simulation_type>",
         "favicon": "/favicon.ico",
+        "faviconPng": "/favicon.png",
         "findByName": "/find-by-name/<simulation_type>/<application_mode>/<simulation_name>",
         "findByNameWithAuth": "/find-by-name-auth/<simulation_type>/<application_mode>/<simulation_name>",
         "forbidden": "/forbidden",
