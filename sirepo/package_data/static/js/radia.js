@@ -1082,6 +1082,7 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
             $scope.isExpanded = item => expanded[itemIndex(item)];
 
             $scope.modelFields = index => {
+                return SIREPO.APP_SCHEMA.view[$scope.field[index].type].advanced;
                 const mn = $scope.field[index].type;
                 let mf = SIREPO.APP_SCHEMA.view[mn].advanced.map(f => {
                     const m = appState.parseModelField(f);
