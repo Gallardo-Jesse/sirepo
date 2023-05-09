@@ -1047,8 +1047,23 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
                 return $scope.field.indexOf(data);
             }
 
+            $scope.isPage = field => {
+                return Array.isArray(field) && field.length >= 2 && Array.isArray(field[1]);
+            }
+
             function info(modelName, field) {
+                srdbg(modelName, field, appState.modelInfo(modelName));
                 return appState.modelInfo(modelName)[field];
+            }
+
+            function advancedField(field) {
+                if (field instanceof String) {
+                    return [field];
+                }
+                if (Array.isArray(field) && field.length >= 2 && Array.isArray(field[1])) {
+                    return field[1];
+                }
+                return null;
             }
 
             $scope.addItem = () => {
@@ -1072,6 +1087,10 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
             $scope.fieldLabel = (modelName, field) => info(modelName, field)[SIREPO.INFO_INDEX_LABEL];
 
             $scope.fieldMinWidth = (modelName, field) => {
+                if ($scope.isPage(field)) {
+                    return '0';
+                }
+                srdbg('FMW info', info(modelName, field));
                 return info(modelName, field)[SIREPO.INFO_INDEX_TYPE] === 'ModelArrayTable' ? '900px' : '0';
             };
 
@@ -1082,9 +1101,16 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
             $scope.isExpanded = item => expanded[itemIndex(item)];
 
             $scope.modelFields = index => {
-                return SIREPO.APP_SCHEMA.view[$scope.field[index].type].advanced;
+                let mf = [];
+                //srdbg('mf', mf);
+                //return SIREPO.APP_SCHEMA.view[$scope.field[index].type].advanced;
+                //srdbg($scope.field[index], info($scope.field[index]));
+
                 const mn = $scope.field[index].type;
-                let mf = SIREPO.APP_SCHEMA.view[mn].advanced.map(f => {
+                for (const f of SIREPO.APP_SCHEMA.view[mn].advanced) {
+                    mf.push(...advancedField(f));
+                }
+                mf = SIREPO.APP_SCHEMA.view[$scope.field[index].type].advanced.map(f => {
                     const m = appState.parseModelField(f);
                     if (! m) {
                         return f;
@@ -1092,9 +1118,9 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
                     const mm = appState.parseModelField(m[1]);
                     const smn = SIREPO.APP_SCHEMA.model[mn][mm[0]][SIREPO.INFO_INDEX_TYPE].split('.')[1];
                     return `${smn}.${mm[1]}`;
-                })
+                });
                 srdbg(mf);
-                return mf;  //SIREPO.APP_SCHEMA.view[$scope.field[index].type].advanced;
+                return mf;
             };
 
             $scope.moveItem = (direction, item) => {
@@ -1107,6 +1133,8 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
                     $scope.field[currentIndex] = tmp;
                 }
             };
+
+            $scope.pageFields = page => page[1];
 
             $scope.title = modelName => SIREPO.APP_SCHEMA.view[modelName].title;
 
