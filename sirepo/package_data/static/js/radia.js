@@ -1008,7 +1008,11 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
                       <label>{{ title(item.type) }}</label>
                     </div>
                     <div data-ng-show="isExpanded(item)" data-ng-repeat="f in modelFields($index)" style="padding-left: 6px; min-width: {{ fieldMinWidth(item.type, f) }}">
-                      <div data-field-editor="f" data-label-size="12" data-field-size="fieldSize(item.type, f)" data-model-name="item.type" data-model="item"></div>
+                      <div data-ng-if="isObject(item.type, f)">
+                        <label class="control-label col-sm-12">{{ fieldLabel(item.type, f) }}</label>
+                        <button data-ng-click="edit(item[f])" class="btn btn-info btn-xs"><span class="glyphicon glyphicon-pencil"></span></button>
+                      </div>
+                      <div data-ng-if="! isObject(item.type, f)" data-field-editor="f" data-label-size="12" data-field-size="fieldSize(item.type, f)" data-model-name="item.type" data-model="item"></div>
                     </div>
                     <div data-ng-show="! isExpanded(item)">...</div>
                     </td>
@@ -1047,13 +1051,29 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
                 return $scope.field.indexOf(data);
             }
 
+            $scope.edit = o => {
+                srdbg('edit', o);
+                //selectedItem = item;
+                //appState.models[itemModel] = item;
+                //appState.models.geomObject = item.object;
+                //panelState.showModalEditor(itemModel);
+            };
+
             $scope.isPage = field => {
                 return Array.isArray(field) && field.length >= 2 && Array.isArray(field[1]);
-            }
+            };
+
+            $scope.isObject = (modelName, field) => {
+                return angular.isObject(info(modelName, field)[SIREPO.INFO_INDEX_DEFAULT_VALUE]);
+            };
 
             function info(modelName, field) {
-                srdbg(modelName, field, appState.modelInfo(modelName));
+                //srdbg(modelName, field, appState.modelInfo(modelName));
                 return appState.modelInfo(modelName)[field];
+            }
+
+            function infoType(modelName, field) {
+                return info(modelName, field)[SIREPO.INFO_INDEX_TYPE];
             }
 
             function advancedField(field) {
@@ -1090,12 +1110,11 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
                 if ($scope.isPage(field)) {
                     return '0';
                 }
-                srdbg('FMW info', info(modelName, field));
-                return info(modelName, field)[SIREPO.INFO_INDEX_TYPE] === 'ModelArrayTable' ? '900px' : '0';
+                return infoType(modelName, field) === 'ModelArrayTable' ? '900px' : '0';
             };
 
             $scope.fieldSize = (modelName, field) => {
-                return info(modelName, field)[SIREPO.INFO_INDEX_TYPE] === 'String' ? 8 : null;
+                return infoType(modelName, field) === 'String' ? 8 : null;
             };
 
             $scope.isExpanded = item => expanded[itemIndex(item)];
@@ -1107,19 +1126,19 @@ SIREPO.app.directive('modelArrayTable', function(appState, panelState, radiaServ
                 //srdbg($scope.field[index], info($scope.field[index]));
 
                 const mn = $scope.field[index].type;
-                for (const f of SIREPO.APP_SCHEMA.view[mn].advanced) {
-                    mf.push(...advancedField(f));
-                }
-                mf = SIREPO.APP_SCHEMA.view[$scope.field[index].type].advanced.map(f => {
+                //for (const f of SIREPO.APP_SCHEMA.view[mn].advanced) {
+                //    mf.push(...advancedField(f));
+                //}
+                mf = SIREPO.APP_SCHEMA.view[mn].advanced.map(f => {
                     const m = appState.parseModelField(f);
                     if (! m) {
                         return f;
                     }
                     const mm = appState.parseModelField(m[1]);
-                    const smn = SIREPO.APP_SCHEMA.model[mn][mm[0]][SIREPO.INFO_INDEX_TYPE].split('.')[1];
+                    //const smn = SIREPO.APP_SCHEMA.model[mn][mm[0]][SIREPO.INFO_INDEX_TYPE].split('.')[1];
+                    const smn = infoType(mn, mm[0]).split('.')[1];
                     return `${smn}.${mm[1]}`;
                 });
-                srdbg(mf);
                 return mf;
             };
 

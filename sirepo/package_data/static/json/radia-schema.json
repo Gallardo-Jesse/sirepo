@@ -859,6 +859,11 @@
             "notes": ["Notes", "Text", ""],
             "viewType": ["View", "ViewType", "objects"]
         },
+        "magnetTermination": {
+            "_super": ["_", "model", "termination"],
+            "object": ["Magnet", "model.undulatorHybrid.magnet", {}],
+            "type": ["_", "String", "magnetTermination"]
+        },
         "manualPath": {
             "_super": ["_", "model", "fieldPath"],
             "ptX": ["x [mm]", "Float", 0.0],
@@ -899,6 +904,11 @@
         "pointsReport": {
             "doSnap": ["Snap to Grid", "Boolean", "0"],
             "gridSize": ["Grid Size [mm]", "Float", "0.5", "", "0"]
+        },
+        "poleTermination": {
+            "_super": ["_", "model", "termination"],
+            "object": ["Pole", "model.undulatorHybrid.pole", {}],
+            "type": ["_", "String", "poleTermination"]
         },
         "racetrack": {
             "_super": ["_", "model", "radiaObject"],
@@ -1070,7 +1080,7 @@
             "terminationGroup": ["_", "model.geomGroup", {
                 "name": "terminations"
             }],
-            "terminations": ["Termination Objects", "ModelArrayTable",
+            "terminations": ["", "ModelArrayTable",
                 [
                     {
                         "airGap": 0,
@@ -1088,7 +1098,7 @@
                     }
                 ],
                 "",
-                ["termination"]
+                ["magnetTermination", "poleTermination", "termination"]
             ],
             "corePoleGroup": ["_", "model.geomGroup", {
                 "name": "core + pole"
@@ -1251,6 +1261,15 @@
             "advanced": [],
             "basic": []
         },
+        "fieldLineoutAnimation": {
+            "title": "Field on Path",
+            "basic": [],
+            "advanced": [
+                "fieldPaths",
+                "fieldType",
+                "plotAxis"
+            ]
+        },
         "fieldMapPath": {
             "title": "Field Map",
             "basic": [
@@ -1345,7 +1364,6 @@
                 ]]
             ]
         },
-        "invert": {},
         "kickMapReport": {
             "title": "Kick Map",
             "basic": [],
@@ -1392,6 +1410,14 @@
             ],
             "advanced": [
                 "notes"
+            ]
+        },
+        "magnetTermination": {
+            "title": "Magnet Copy",
+            "basic": [],
+            "advanced": [
+                "airGap",
+                "gapOffset"
             ]
         },
         "manualPath": {
@@ -1478,6 +1504,14 @@
                 "gridSize"
             ],
             "advanced": []
+        },
+        "poleTermination": {
+            "title": "Pole Copy",
+            "basic": [],
+            "advanced": [
+                "airGap",
+                "gapOffset"
+            ]
         },
         "racetrack": {
             "title": "Race Track",
@@ -1566,15 +1600,6 @@
             ],
             "advanced": []
         },
-        "fieldLineoutAnimation": {
-            "title": "Field on Path",
-            "basic": [],
-            "advanced": [
-                "fieldPaths",
-                "fieldType",
-                "plotAxis"
-            ]
-        },
         "symmetryTransform": {
             "title": "Symmetry",
             "basic": [
@@ -1592,16 +1617,9 @@
             "title": "Termination",
             "basic": [],
             "advanced": [
-                "termination.object.name",
-                "termination.object.shapeButton",
-                "termination.object.size",
-                "termination.object.segments",
+                "object",
                 "airGap",
-                "gapOffset",
-                "termination.object.material",
-                "termination.object.materialFile",
-                "termination.object.magnetization",
-                "termination.object.remanentMag"
+                "gapOffset"
             ]
         },
         "terminations": {
