@@ -438,6 +438,7 @@ def _laser_pulse_plot(run_dir, plot_type, sim_in, element_index, element, slice_
         d = template_common.h5_to_dict(f, str(slice_index))
         r = d.ranges
         z = d[plot_type]
+        pkdp("\n\n\n\n plot_type={}", plot_type)
         return PKDict(
             title=_title(plot_type, slice_index),
             x_range=[r.x[0], r.x[1], len(z)],
