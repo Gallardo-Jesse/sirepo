@@ -13,7 +13,7 @@ import { CPanelController } from "../../data/panel"
 import { PanelController } from "../../data/panel";
 
 export type PanelProps = {
-    panelBodyShown: boolean,
+    panelBodyShown?: boolean,
     title: string,
     buttons?: JSX.Element[] | JSX.Element,
     children?: React.ReactNode
@@ -44,7 +44,7 @@ export function Panel(props: PanelProps) {
                         {buttons}
                     </div>
                 </Card.Header>
-                {panelBodyShown &&
+                {(panelBodyShown !== undefined ? panelBodyShown : true) &&
                     <Card.Body>
                         {props.children}
                     </Card.Body>
@@ -68,8 +68,8 @@ export type EditorPanelProps = {
     submit: () => void,
     cancel: () => void,
     showButtons: boolean,
-    mainChildren: JSX.Element[],
-    modalChildren: JSX.Element[],
+    children: React.ReactNode,
+    modalChildren: React.ReactNode,
     formValid: boolean,
     title: string,
     id: string
@@ -80,7 +80,7 @@ export function EditorPanel(props: EditorPanelProps) {
         submit,
         cancel,
         showButtons,
-        mainChildren,
+        children,
         modalChildren,
         formValid,
         title,
@@ -89,7 +89,7 @@ export function EditorPanel(props: EditorPanelProps) {
     let [advancedModalShown, updateAdvancedModalShown] = useState(false);
     let [panelBodyShown, updatePanelBodyShown] = useState(true);
 
-    let hasModalChildren = !!modalChildren && modalChildren.length !== 0;
+    let hasModalChildren = !!modalChildren;
 
     let headerButtons = (
         <Fragment>
@@ -114,7 +114,7 @@ export function EditorPanel(props: EditorPanelProps) {
     return (
         <Panel title={title} buttons={headerButtons} panelBodyShown={panelBodyShown}>
             <EditorForm key={id}>
-                {mainChildren}
+                {children}
             </EditorForm>
 
             {hasModalChildren && <Modal show={advancedModalShown} onHide={() => _cancel()} size="lg">

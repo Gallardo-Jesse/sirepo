@@ -1,6 +1,6 @@
 import { Nav , Modal, Col, Row } from "react-bootstrap";
 import { Navigate, useRoutes, Link, useResolvedPath, useParams } from "react-router-dom";
-import { NavbarLeftContainerId, NavbarRightContainerId } from "../component/reusable/navbar";
+import { NavbarLeftContainerId, NavbarRightContainerId } from "../component/navbar";
 import { interpolate } from "../utility/string";
 import { useContext, useState } from "react";
 import { LayoutProps, Layout } from "./layout";

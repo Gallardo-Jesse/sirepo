@@ -13,7 +13,7 @@ import { Link, Route, Routes, Navigate, useParams } from "react-router-dom";
 import { SimulationRoot } from "./simulation";
 import { CRouteHelper } from "../utility/route";
 import "./simbrowser.scss";
-import { NavbarLeftContainerId } from "./reusable/navbar";
+import { NavbarLeftContainerId } from "./navbar";
 import { CSimulationList, SimulationListItem } from "../data/appwrapper";
 import { Portal } from "./reusable/portal";
 

@@ -6,16 +6,13 @@ import {
 import { LabelTooltip } from "./label";
 import React, {
     useState,
-    useContext,
     useEffect
 } from "react";
 import {
     formActions,
-    formStatesSlice
 } from "../../store/formState";
 import { useDispatch, useStore } from "react-redux";
 import { AppWrapper, CSchema } from "../../data/appwrapper";
-import { SimulationInfo } from "../simulation";
 import { AnyAction, Dispatch, Store } from "redux";
 import { FormStateHandleFactory, initialFormStateFromValue } from "../../data/form";
 import { modelsSlice } from "../../store/models";
@@ -66,8 +63,6 @@ export function formActionFunctions(config: {
 
 export function FormStateInitializer(props) {
     let [hasInit, updateHasInit] = useState(undefined);
-
-    let schema = useContext(CSchema);
 
     let store = useStore();
     let dispatch = useDispatch();

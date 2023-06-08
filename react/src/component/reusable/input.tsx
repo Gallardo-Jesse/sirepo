@@ -39,7 +39,7 @@ export function LabeledFieldInput(props: LabeledFieldProps<unknown>) {
     let { value, updateField, dependency, inputComponent, displayName, description, ...passedProps } = props;
 
     return (
-        <FormField {...passedProps} label={displayName} tooltip={description} key={dependency.fieldName}>
+        <FormField {...passedProps} label={displayName} tooltip={description} key={dependency.getDependencyString()}>
             <FieldInput value={value} dependency={dependency} inputComponent={inputComponent} updateField={updateField}></FieldInput>
         </FormField>
     )

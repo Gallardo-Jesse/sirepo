@@ -21,7 +21,7 @@ import { CReportEventManager } from "../data/report";
 import { CAppName, CSchema } from "../data/appwrapper";
 import { LAYOUTS } from "../layout/layouts";
 import { Dependency } from "../data/dependency";
-import { NavbarRightContainerId, NavToggleDropdown } from "./reusable/navbar";
+import { NavbarRightContainerId, NavToggleDropdown } from "./navbar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import * as Icon from "@fortawesome/free-solid-svg-icons";
 import { useSetup } from "../hook/setup";
@@ -295,6 +295,8 @@ export function SimulationRoot(props: {simulationId: string}) {
     let { simulationId } = props;
 
     let schema = useContext(CSchema);
+
+    
 
     let layoutComponents = schema.views.map((schemaLayout, index) => {
         // this should not be called here. it is dangerous to generate layouts on render

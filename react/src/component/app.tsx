@@ -4,7 +4,7 @@ import { SimulationBrowserRoot } from "./simbrowser";
 import "./app.scss";
 import { AppWrapper, CAppName, CAppWrapper, CSchema, CSimulationList } from "../data/appwrapper";
 import { LoginRouter } from "./login/login";
-import { SrNavbar } from "./reusable/navbar";
+import { SrNavbar } from "./navbar";
 import { Container } from "react-bootstrap";
 import { CRouteHelper, RouteHelper } from "../utility/route";
 import { getAppCombinedSchema } from "../utility/schema";

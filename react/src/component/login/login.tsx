@@ -5,7 +5,7 @@ import { Button, Col, Container, Dropdown, Form, Image, Nav, Row, Modal } from "
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router"
 import { AppWrapper, AuthMethod, CAppName, CAppWrapper, CLoginStatusRef, CSchema, LoginStatus } from "../../data/appwrapper"
 import { useSetup } from "../../hook/setup"
-import { NavbarRightContainerId, NavToggleDropdown } from "../reusable/navbar";
+import { NavbarRightContainerId, NavToggleDropdown } from "../navbar";
 import { Portal } from "../reusable/portal";
 import "./login.scss";
 import { LoginEmailConfirm, LoginWithEmail } from "./email";

@@ -23,6 +23,8 @@ import { MadxAllBeamlineElementsLayout } from "./madx/allBeamlineElements";
 import { MadxBeamlinesPickerLayout } from "./madx/beamlinesPicker";
 import { MadxBeamlineElementsLayout } from "./madx/beamlineElements";
 import { MadxBeamlineReportsLayout } from "./madx/beamlineReports";
+import { FunctionComponent } from "react";
+import { JspecRoot } from "../component/approot/jspec";
 
 
 // TODO rename to LayoutsWrapper
@@ -55,6 +57,10 @@ class LayoutWrapper {
         madxBeamlinesPicker: MadxBeamlinesPickerLayout,
         madxBeamlineElements: LayoutWithFormController(MadxBeamlineElementsLayout),
         madxBeamlineReports: MadxBeamlineReportsLayout
+    }
+    
+    fullReactApps: {[key: string]: FunctionComponent} = {
+        jspec: JspecRoot
     }
 
     constructor () {

@@ -1,6 +1,6 @@
 import React from "react";
 import { FunctionComponent } from "react";
-import { FlexAlign, FlexJustify, FlexWrap, HorizontalStack, VerticalStack } from "../../component/reusable/stack";
+import { FlexAlign, FlexJustify, FlexWrap, HorizontalStack, VerticalStack } from "../../component/reusable/arrange/stack";
 import { Dependency } from "../../data/dependency";
 import { SchemaLayout } from "../../utility/schema";
 import { Layout, LayoutProps } from "../layout";
