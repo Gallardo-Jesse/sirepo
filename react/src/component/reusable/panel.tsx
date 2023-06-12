@@ -7,7 +7,6 @@ import {
 import React, { useState, Fragment } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import * as Icon from "@fortawesome/free-solid-svg-icons";
-import { EditorForm } from "./form";
 import { v4 as uuidv4 } from 'uuid';
 import { CPanelController } from "../../data/panel"
 import { PanelController } from "../../data/panel";
@@ -15,12 +14,12 @@ import { PanelController } from "../../data/panel";
 export type PanelProps = {
     panelBodyShown?: boolean,
     title: string,
-    buttons?: JSX.Element[] | JSX.Element,
-    children?: React.ReactNode
+    headerButtons?: React.ReactNode | React.ReactNode[],
+    children?: React.ReactNode | React.ReactNode[]
 }
 
 export function Panel(props: PanelProps) {
-    let { title, buttons, panelBodyShown } = props;
+    let { title, headerButtons, panelBodyShown } = props;
 
     let [panelButtonsId] = useState(() => uuidv4());
 
@@ -41,7 +40,7 @@ export function Panel(props: PanelProps) {
                     {title}
                     <div className="float-end">
                         <div id={panelButtonsId} className="d-inline"></div>
-                        {buttons}
+                        {headerButtons}
                     </div>
                 </Card.Header>
                 {(panelBodyShown !== undefined ? panelBodyShown : true) &&
@@ -52,6 +51,43 @@ export function Panel(props: PanelProps) {
             </Card>
         </CPanelController.Provider>
     );
+}
+
+export type ModalPanelProps = {
+    modalChildren?: React.ReactNode | React.ReactNode[],
+    modalShown?: boolean,
+    onModalShow?: (show: boolean) => void
+} & PanelProps
+
+export function ModalPanel(props: ModalPanelProps) {
+    let { modalChildren, headerButtons, ...panelProps } = props;
+
+    let hasModal = !!modalChildren;
+
+    if(hasModal) {
+        if(!headerButtons) {
+            headerButtons = [];
+        }
+        if(!Array.isArray(headerButtons)) {
+            headerButtons = [headerButtons];
+        }
+        (headerButtons as React.ReactNode[]).push(
+            <a className="ms-2" onClick={() => props.onModalShow && props.onModalShow(true)}><FontAwesomeIcon icon={Icon.faPencil} fixedWidth /></a>
+        )
+    }
+
+    return (
+        <Panel {...panelProps} headerButtons={headerButtons}>
+            {hasModal && <Modal show={props.modalShown} onHide={() => props.onModalShow && props.onModalShow(false)} size="lg">
+                <Modal.Header className="lead bg-info bg-opacity-25">
+                    {props.title}
+                </Modal.Header>
+                <Modal.Body>
+                    {modalChildren}
+                </Modal.Body>
+            </Modal>}
+        </Panel>
+    )
 }
 
 export function ViewPanelActionButtons(props: { onSave: () => void, onCancel: () => void, canSave: boolean }) {
@@ -68,13 +104,14 @@ export type EditorPanelProps = {
     submit: () => void,
     cancel: () => void,
     showButtons: boolean,
-    children: React.ReactNode,
-    modalChildren: React.ReactNode,
+    children: React.ReactNode | React.ReactNode[],
+    modalChildren: React.ReactNode | React.ReactNode[],
     formValid: boolean,
     title: string,
     id: string
 }
 
+// TODO: garsuga, this component should be deleted when no longer needed
 export function EditorPanel(props: EditorPanelProps) {
     let {
         submit,
@@ -83,28 +120,19 @@ export function EditorPanel(props: EditorPanelProps) {
         children,
         modalChildren,
         formValid,
-        title,
-        id
+        title
     } = props;
-    let [advancedModalShown, updateAdvancedModalShown] = useState(false);
+    let [modalShown, updateModalShown] = useState(false);
+    // TODO: garsuga, panel needs to be corrected after it is no longer in a layout
     let [panelBodyShown, updatePanelBodyShown] = useState(true);
 
-    let hasModalChildren = !!modalChildren;
-
-    let headerButtons = (
-        <Fragment>
-            {hasModalChildren && <a className="ms-2" onClick={() => updateAdvancedModalShown(true)}><FontAwesomeIcon icon={Icon.faPencil} fixedWidth /></a>}
-            <a className="ms-2" onClick={() => updatePanelBodyShown(!panelBodyShown)}><FontAwesomeIcon icon={panelBodyShown ? Icon.faChevronUp : Icon.faChevronDown} fixedWidth /></a>
-        </Fragment>
-    );
-
     let _cancel = () => {
-        updateAdvancedModalShown(false);
+        updateModalShown(false);
         cancel();
     }
 
     let _submit = () => {
-        updateAdvancedModalShown(false);
+        updateModalShown(false);
         submit();
     }
 
@@ -112,27 +140,18 @@ export function EditorPanel(props: EditorPanelProps) {
 
     // TODO: should this cancel changes on modal hide??
     return (
-        <Panel title={title} buttons={headerButtons} panelBodyShown={panelBodyShown}>
-            <EditorForm key={id}>
-                {children}
-            </EditorForm>
-
-            {hasModalChildren && <Modal show={advancedModalShown} onHide={() => _cancel()} size="lg">
-                <Modal.Header className="lead bg-info bg-opacity-25">
-                    {title}
-                </Modal.Header>
-                <Modal.Body>
-                    <EditorForm key={id}>
-                        {modalChildren}
-                    </EditorForm>
-                    {showButtons &&
-                        <Fragment>
-                            {actionButtons}
-                        </Fragment>
-                    }
-                </Modal.Body>
-            </Modal>}
+        <ModalPanel title={title} panelBodyShown={panelBodyShown} onModalShow={updateModalShown} modalShown={modalShown} modalChildren={(
+            <>
+                {modalChildren}
+                {showButtons &&
+                    <Fragment>
+                        {actionButtons}
+                    </Fragment>
+                }
+            </>
+        )}>
+            {children}
             {showButtons && actionButtons}
-        </Panel>
+        </ModalPanel>
     )
 }

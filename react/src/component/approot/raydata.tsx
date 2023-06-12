@@ -5,7 +5,7 @@ import { SrNavbar } from "../navbar";
 import { SrNavTab, SrNavTabs } from "../navtabs";
 import { VerticalStack } from "../reusable/arrange/stack";
 import { WaterfallComponent } from "../reusable/arrange/waterfall";
-import { EditorPanel, Panel } from "../reusable/panel";
+import { EditorPanel, ModalPanel, Panel } from "../reusable/panel";
 
 
 export function RaydataRoot(props: {}) {
@@ -32,16 +32,20 @@ export function RaydataRoot(props: {}) {
                 gutters={{
                     horizontal: ".5em",
                     vertical: ".5em"
-                }}
+                }} 
                 padding=".5em">
                 <SrNavTab tab={"run-analysis"}>
                     {() => (
                         <>
-                            <EditorPanel title={"Run Analysis"}>
+                            <ModalPanel title={"Run Analysis"}>
                                 <VerticalStack warp={"nowrap"}>
-
+                                    {
+                                        () => {
+                                            
+                                        }()
+                                    }
                                 </VerticalStack>
-                            </EditorPanel>
+                            </ModalPanel>
                         </>
                     )}
                 </SrNavTab>
