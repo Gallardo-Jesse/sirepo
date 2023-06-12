@@ -524,6 +524,9 @@ class API(sirepo.quest.API):
         req = self.parse_post(id=True, template=True)
         d = req.req_data
         simulation_db.validate_serial(d, qcall=self)
+        # TODO(pjm): this should happen with the fixup below, but is not
+        if sirepo.feature_config.is_react_sim_type(req.type):
+            req.sim_data.react_unformat_data(d)
         return self._simulation_data_reply(
             req,
             simulation_db.save_simulation_json(
@@ -778,7 +781,13 @@ class API(sirepo.quest.API):
 
     def _simulation_data_reply(self, req, data):
         if hasattr(req.template, "prepare_for_client"):
+            # TODO(pjm): for some reason _simulation_data_reply() can be called twice in one request
+            # see madx FODO PTC example
+            if sirepo.feature_config.is_react_sim_type(req.type):
+                req.sim_data.react_unformat_data(data)
             d = req.template.prepare_for_client(data, qcall=self)
+        if sirepo.feature_config.is_react_sim_type(req.type):
+            req.sim_data.react_format_data(data)
         return self.headers_for_no_cache(self.reply_json(data))
 
 
