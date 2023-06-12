@@ -25,6 +25,7 @@ import { MadxBeamlineElementsLayout } from "./madx/beamlineElements";
 import { MadxBeamlineReportsLayout } from "./madx/beamlineReports";
 import { FunctionComponent } from "react";
 import { JspecRoot } from "../component/approot/jspec";
+import { RaydataRoot } from "../component/approot/raydata";
 
 
 // TODO rename to LayoutsWrapper
@@ -60,7 +61,8 @@ class LayoutWrapper {
     }
     
     fullReactApps: {[key: string]: FunctionComponent} = {
-        jspec: JspecRoot
+        jspec: JspecRoot,
+        raydata: RaydataRoot
     }
 
     constructor () {

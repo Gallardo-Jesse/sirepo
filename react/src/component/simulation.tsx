@@ -294,9 +294,14 @@ export function SimulationOuter(props) {
 export function SimulationRoot(props: {simulationId: string}) {
     let { simulationId } = props;
 
+    let appName = useContext(CAppName);
     let schema = useContext(CSchema);
 
-    
+    let AppRoot = LAYOUTS.fullReactApps[appName];
+
+    /*if(AppRoot) {
+        return (<AppRoot/>);
+    }*/
 
     let layoutComponents = schema.views.map((schemaLayout, index) => {
         // this should not be called here. it is dangerous to generate layouts on render
