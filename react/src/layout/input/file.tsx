@@ -66,7 +66,7 @@ export class FileInputLayout extends InputLayout<FileInputConfig, string, string
                         // TODO: does this filter need to be here?
                         if(this.config.pattern) {
                             fileNameList = (fileNameList || []).filter(fileName => fileName && !!fileName.match(this.config.pattern));
-                        }
+                        } 
                         resolve(fileNameList);
                     })
                 })

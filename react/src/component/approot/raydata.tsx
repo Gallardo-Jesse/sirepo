@@ -1,11 +1,10 @@
 import React from "react";
 import { useContext } from "react";
 import { CSchema } from "../../data/appwrapper";
-import { SrNavbar } from "../navbar";
 import { SrNavTab, SrNavTabs } from "../navtabs";
 import { VerticalStack } from "../reusable/arrange/stack";
 import { WaterfallComponent } from "../reusable/arrange/waterfall";
-import { EditorPanel, ModalPanel, Panel } from "../reusable/panel";
+import { ModalPanel } from "../reusable/panel";
 
 
 export function RaydataRoot(props: {}) {
@@ -40,9 +39,9 @@ export function RaydataRoot(props: {}) {
                             <ModalPanel title={"Run Analysis"}>
                                 <VerticalStack warp={"nowrap"}>
                                     {
-                                        () => {
-                                            
-                                        }()
+                                        (() => {
+                                            return <></>
+                                        })()
                                     }
                                 </VerticalStack>
                             </ModalPanel>
