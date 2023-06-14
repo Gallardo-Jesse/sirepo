@@ -1,7 +1,7 @@
 import { ModelSelector, ModelWriteActionCreator } from "../store/common";
 import { formActions, FormFieldState, FormModelState, formSelectors, formStatesSlice } from "../store/formState";
 import { modelActions, modelSelectors, modelsSlice, ModelState } from "../store/models";
-import { SchemaModel } from "../utility/schema";
+import { SchemaModel } from "./schema";
 import { mapProperties } from "../utility/object";
 
 export class StoreType<M, F> {

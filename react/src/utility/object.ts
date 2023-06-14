@@ -6,6 +6,13 @@ export function mapProperties<I, O>(obj: {[key: string]: I}, mapFunc: (name: str
     )
 }
 
+/**
+ * https://stackoverflow.com/questions/51804810/how-to-remove-fields-from-a-typescript-interface-via-extension \
+ * Equals the type with certain fields omitted \
+ * Ex: `Omit<HTMLTextElement, 'value'|'text-align'>`
+ */
+export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
+
 export type KeyValuePair<K, V> = {
     key: K,
     value: V

@@ -3,7 +3,7 @@ import { Col } from "react-bootstrap";
 import { Dependency } from "../../data/dependency";
 import { LAYOUTS } from "../layouts";
 import { Layout } from "../layout";
-import { SchemaLayout } from "../../utility/schema";
+import { SchemaLayout } from "../../data/schema";
 
 export type ColumnConfig = {
     item: SchemaLayout,

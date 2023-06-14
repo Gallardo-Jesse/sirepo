@@ -1,6 +1,6 @@
 import { ArrayFieldState } from "../../../store/common";
 import { ModelState, modelSelectors, modelActions } from "../../../store/models";
-import { Schema } from "../../../utility/schema";
+import { Schema } from "../../schema";
 import { newModelFromSchema } from "../../data";
 import { ConfigurableMiddleware } from "../middleware";
 import { Dependency } from "../../dependency";

@@ -1,7 +1,7 @@
 import { layoutForArrayLike } from "../layout/input/array";
 import { InputLayout } from "../layout/input/input";
 import { TYPE_BASES } from "../layout/input/inputs";
-import { mapProperties } from "./object";
+import { mapProperties } from "../utility/object";
 
 export type SchemaLayoutJson = {
     layout: string,

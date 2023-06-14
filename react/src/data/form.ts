@@ -4,7 +4,7 @@ import { StoreState } from "../store/common";
 import { FormFieldState, FormModelState } from "../store/formState";
 import { ModelState } from "../store/models";
 import { Dictionary, mapProperties } from "../utility/object";
-import { Schema } from "../utility/schema";
+import { Schema } from "./schema";
 import { StoreType, StoreTypes, expandDataStructure, revertDataStructure, getValueSelector } from "./data";
 import { Dependency } from "./dependency";
 import { DataHandle, EmptyDataHandle, EmptyModelHandle, HandleFactory, ModelHandle } from "./handle";

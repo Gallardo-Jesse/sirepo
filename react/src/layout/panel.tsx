@@ -5,7 +5,7 @@ import { useDispatch, useStore } from "react-redux";
 import { EditorPanel, EditorPanelProps } from "../component/reusable/panel";
 import "./panel.scss";
 import React from "react";
-import { SchemaLayout } from "../utility/schema";
+import { SchemaLayout } from "../data/schema";
 import { LAYOUTS } from "./layouts";
 import { useShown } from "../hook/shown";
 import { StoreTypes } from "../data/data";

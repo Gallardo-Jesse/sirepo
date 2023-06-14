@@ -6,7 +6,7 @@ import { Button, Form, Modal } from "react-bootstrap";
 import { CAppName } from "../../data/appwrapper";
 import { interpolate } from "../../utility/string";
 import { downloadAs } from "../../utility/download";
-import { SchemaLayout } from "../../utility/schema";
+import { SchemaLayout } from "../../data/schema";
 import { LayoutProps } from "../layout";
 import { LAYOUTS } from "../layouts";
 import { InputComponentProps, InputConfigBase, InputLayout } from "./input";

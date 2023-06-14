@@ -7,7 +7,7 @@ import { LoginRouter } from "./login/login";
 import { SrNavbar } from "./navbar";
 import { Container } from "react-bootstrap";
 import { CRouteHelper, RouteHelper } from "../utility/route";
-import { getAppCombinedSchema } from "../utility/schema";
+import { getAppCombinedSchema } from "../data/schema";
 
 export const AppContextWrapper = (props) => {
     

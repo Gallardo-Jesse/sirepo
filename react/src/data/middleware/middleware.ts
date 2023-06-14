@@ -1,6 +1,6 @@
 import { Middleware } from "redux";
 import { SimulationInfo, SimulationInfoRaw } from "../../component/simulation";
-import { Schema } from "../../utility/schema";
+import { Schema } from "../schema";
 import { saveMiddleware } from "./save";
 import { shadowBeamlineSortingMiddleware } from "./shadow/beamline";
 import { shadowBeamlineWatchpointReportsMiddleware } from "./shadow/watchpoint";

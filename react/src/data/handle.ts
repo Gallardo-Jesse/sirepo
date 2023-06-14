@@ -1,7 +1,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { AnyAction, Dispatch } from "redux";
-import { Schema } from "../utility/schema";
+import { Schema } from "./schema";
 import { hashCode } from "../utility/string";
 import { getModelReadSelector, getModelWriteActionCreator, getValueSelector, revertDataStructure, StoreType } from "./data";
 import { Dependency } from "./dependency";

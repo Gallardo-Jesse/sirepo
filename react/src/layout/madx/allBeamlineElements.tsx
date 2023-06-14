@@ -22,7 +22,7 @@ import "./allBeamlineElements.scss";
 import "./beamlines.scss";
 import { FormFieldState, FormModelState } from "../../store/formState";
 import { cloneDeep } from "lodash";
-import { SchemaModel } from "../../utility/schema";
+import { SchemaModel } from "../../data/schema";
 
 export type TemplateSettings = {
     type: string,

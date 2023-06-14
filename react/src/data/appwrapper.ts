@@ -1,6 +1,6 @@
 import React, { MutableRefObject } from "react";
 import { RouteHelper } from "../utility/route";
-import { Schema } from "../utility/schema";
+import { Schema } from "./schema";
 
 export type ApiSimulation = {
     documentationUrl: string,

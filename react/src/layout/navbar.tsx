@@ -10,7 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import * as Icon from "@fortawesome/free-solid-svg-icons";
 import { CRelativeRouterHelper, RelativeRouteHelper } from "../utility/route";
 import React from "react";
-import { SchemaLayout } from "../utility/schema";
+import { SchemaLayout } from "../data/schema";
 import { LAYOUTS } from "./layouts";
 import { Portal } from "../component/reusable/portal";
 import { formActionFunctions } from "../component/reusable/form";

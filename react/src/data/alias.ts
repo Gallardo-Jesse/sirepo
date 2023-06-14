@@ -1,6 +1,6 @@
 import { Dispatch, AnyAction } from "redux";
 import { ArrayFieldElement, ArrayFieldState, StoreState } from "../store/common";
-import { Schema } from "../utility/schema";
+import { Schema } from "./schema";
 import { expandDataStructure, getValueSelector, revertDataStructure, StoreType, StoreTypes, ValueSelectors } from "./data";
 import { Dependency } from "./dependency";
 import { DataHandle, EmptyDataHandle, EmptyModelHandle, HandleFactory, ModelHandle } from "./handle";

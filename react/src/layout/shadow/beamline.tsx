@@ -13,7 +13,7 @@ import { CHandleFactory } from "../../data/handle";
 import { ArrayFieldState } from "../../store/common";
 import { FormFieldState, FormModelState } from "../../store/formState";
 import { CRouteHelper } from "../../utility/route";
-import { SchemaLayout } from "../../utility/schema";
+import { SchemaLayout } from "../../data/schema";
 import { Layout, LayoutProps } from "../layout";
 import { createLayouts } from "../layouts";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";

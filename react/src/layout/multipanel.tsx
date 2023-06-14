@@ -3,7 +3,7 @@ import { Col, Row } from "react-bootstrap";
 import { LAYOUTS } from "./layouts";
 import { LayoutProps, Layout } from "./layout";
 import { ReportAnimationController, useAnimationReader } from "./report"
-import { SchemaLayout } from "../utility/schema";
+import { SchemaLayout } from "../data/schema";
 import { useWindowSize } from "../hook/breakpoint";
 import { SimulationFrame } from "../data/report";
 

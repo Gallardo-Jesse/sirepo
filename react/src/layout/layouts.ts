@@ -11,7 +11,7 @@ import { NavBarModalButton, NavTabsLayout } from "./navbar";
 import { TableFromApi } from "./report/table";
 import { LayoutWithDownloadButton } from "./download";
 import { LayoutType, Layout } from "./layout";
-import { SchemaLayout } from "../utility/schema";
+import { SchemaLayout } from "../data/schema";
 import { TextLayout } from "./text";
 import { HorizontalStackLayout, VerticalStackLayout } from "./arrange/stack";
 import { ColumnLayout } from "./arrange/column";

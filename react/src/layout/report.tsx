@@ -13,7 +13,7 @@ import React from "react";
 import { CPanelController } from "../data/panel";
 import { LAYOUTS } from "./layouts";
 import { CAppName, CSchema } from "../data/appwrapper";
-import { SchemaLayout } from "../utility/schema";
+import { SchemaLayout } from "../data/schema";
 import { CRouteHelper } from "../utility/route";
 import { ModelState } from "../store/models";
 import { useShown } from "../hook/shown";

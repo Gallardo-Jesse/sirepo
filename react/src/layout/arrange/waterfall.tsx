@@ -4,7 +4,7 @@ import { LAYOUTS } from "../layouts";
 import React from "react";
 import "./waterfall.scss";
 import { WaterfallComponent } from "../../component/reusable/arrange/waterfall";
-import { SchemaLayout } from "../../utility/schema";
+import { SchemaLayout } from "../../data/schema";
 import { Layout, LayoutProps } from "../layout";
 
 

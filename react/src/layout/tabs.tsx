@@ -2,7 +2,7 @@ import { LayoutProps, Layout } from "./layout";
 import { Tab, Tabs } from "react-bootstrap";
 import { useShown } from "../hook/shown";
 import React from "react";
-import { SchemaLayout } from "../utility/schema";
+import { SchemaLayout } from "../data/schema";
 import { LAYOUTS } from "./layouts";
 import { StoreTypes } from "../data/data";
 

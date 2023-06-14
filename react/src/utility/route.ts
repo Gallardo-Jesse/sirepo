@@ -1,7 +1,7 @@
 import React from "react";
 import { Path } from "react-router-dom";
 import { joinPath } from "./path";
-import { Schema } from "./schema";
+import { Schema } from "../data/schema";
 
 export const CRelativeRouterHelper = React.createContext<RelativeRouteHelper>(undefined);
 export const CRouteHelper = React.createContext<RouteHelper>(undefined);
