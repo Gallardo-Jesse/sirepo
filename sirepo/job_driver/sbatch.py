@@ -19,6 +19,7 @@ import errno
 import sirepo.job_supervisor
 import sirepo.simulation_db
 import sirepo.util
+import subprocess
 import tornado.gen
 import tornado.ioloop
 
@@ -179,24 +180,25 @@ disown
                 )
 
         try:
-            async with asyncssh.connect(
-                self.cfg.host,
-                username=self._creds.username,
-                password=self._creds.password + self._creds.otp
-                if "nersc" in self.cfg.host
-                else self._creds.password,
-                known_hosts=self._KNOWN_HOSTS,
-            ) as c:
-                async with c.create_process("/bin/bash --noprofile --norc -l") as p:
-                    await get_agent_log(c, before_start=True)
-                    o, e = await p.communicate(input=script)
-                    if o or e:
-                        write_to_log(o, e, "start")
-                self.driver_details.pkupdate(
-                    host=self.cfg.host,
-                    username=self._creds.username,
-                )
-                await get_agent_log(c, before_start=False)
+            # async with asyncssh.connect(
+            #     self.cfg.host,
+            #     username=self._creds.username,
+            #     password=self._creds.password + self._creds.otp
+            #     if "nersc" in self.cfg.host
+            #     else self._creds.password,
+            #     known_hosts=self._KNOWN_HOSTS,
+            # ) as c:
+                # async with c.create_process("/bin/bash --noprofile --norc -l") as p:
+            p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-l"])
+            # await get_agent_log(c, before_start=True)
+            o, e = await p.communicate(input=script)
+            if o or e:
+                write_to_log(o, e, "start")
+                # self.driver_details.pkupdate(
+                #     host=self.cfg.host,
+                #     username=self._creds.username,
+                # )
+                # await get_agent_log(c, before_start=False)
         except asyncssh.misc.PermissionDenied:
             pkdlog("{}", pkdexc())
             self._srdb_root = None
