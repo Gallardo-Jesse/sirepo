@@ -72,7 +72,7 @@ EOF
 esac
 echo "${SIREPO_SIMULATION_DB_SBATCH_DISPLAY:-without sbatch}"
 if [[ $SIREPO_JOB_DRIVER_MODULES =~ sbatch ]]; then
-    export SIREPO_JOB_DRIVER_SBATCH_HOST_KEY=asdf
+    export SIREPO_JOB_DRIVER_SBATCH_HOST_KEY=abcd
     if [[ ! $SIREPO_JOB_DRIVER_SBATCH_HOST_KEY ]]; then
         cat <<EOF 1>&2
 you need to get the host key in ~/.ssh/known_hosts

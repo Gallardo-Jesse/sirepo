@@ -707,8 +707,11 @@ class _SbatchRun(_SbatchCmd):
         await self._prepare_simulation()
         if self._terminating:
             return
+        script = self._sbatch_script()
+        pkdp("\n\n\n\n\n\n script =\n {}", script)
+        pkio.write_text("./script.txt", script)
         p = subprocess.run(
-            ("sbatch", self._sbatch_script()),
+            ("sbatch", script),
             close_fds=True,
             cwd=str(self.run_dir),
             capture_output=True,
