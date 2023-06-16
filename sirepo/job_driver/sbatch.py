@@ -109,8 +109,12 @@ class SbatchDriver(job_driver.DriverBase):
         if self._srdb_root is None or c:
             if c:
                 self._creds = c
-            if not self.get("_creds") or "username" not in self._creds:
-                self._raise_sbatch_login_srexception("no-creds", m)
+            else:
+                self._creds = PKDict(
+                    username="user"
+                )
+            # if not self.get("_creds") or "username" not in self._creds:
+            #     self._raise_sbatch_login_srexception("no-creds", m)
             self._srdb_root = self.cfg.srdb_root.format(
                 sbatch_user=self._creds.username,
             )
@@ -189,11 +193,16 @@ disown
             #     known_hosts=self._KNOWN_HOSTS,
             # ) as c:
                 # async with c.create_process("/bin/bash --noprofile --norc -l") as p:
-            p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-l"])
+            # p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-l"])
+            pkdp("\n\n\n script={}", script)
+            pkio.write_text("script.sh", script)
+            # ["/bin/bash", "--noprofile", "--norc", "-l"]
+            subprocess.Popen(["bash", "script.sh"])
             # await get_agent_log(c, before_start=True)
-            o, e = await p.communicate(input=script)
-            if o or e:
-                write_to_log(o, e, "start")
+            # o, e = p.communicate(script)
+            # pkdp("\n\n\n e={}\n\n\no={}", e, o)
+            # if o or e:
+            #     write_to_log(o, e, "start")
                 # self.driver_details.pkupdate(
                 #     host=self.cfg.host,
                 #     username=self._creds.username,
@@ -202,7 +211,7 @@ disown
         except asyncssh.misc.PermissionDenied:
             pkdlog("{}", pkdexc())
             self._srdb_root = None
-            self._raise_sbatch_login_srexception("invalid-creds", op.msg)
+            # self._raise_sbatch_login_srexception("invalid-creds", op.msg)
         except asyncssh.misc.ProtocolError:
             pkdlog("{}", pkdexc())
             raise sirepo.util.UserAlert(
