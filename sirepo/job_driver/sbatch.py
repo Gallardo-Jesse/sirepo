@@ -18,6 +18,7 @@ import datetime
 import errno
 import sirepo.job_supervisor
 import sirepo.simulation_db
+import asyncio
 import sirepo.util
 import subprocess
 import tornado.gen
@@ -216,17 +217,24 @@ disown
         pkdp("\n\n\n script={}", script)
         pkio.write_text("script.sh", script)
         # ["/bin/bash", "--noprofile", "--norc", "-l"]
-        async with subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-l"]) as p:
-            await workaround_get_agent_log(None, before_start=True)
-            o, e = p.communicate(input=script)
-            # pkdp("\n\n\n e={}\n\n\no={}", e, o)
-            if o or e:
-                write_to_log(o, e, "start")
-            # self.driver_details.pkupdate(
-            #     host=self.cfg.host,
-            #     username=self._creds.username,
-            # )
-            await workaround_get_agent_log(None, before_start=False)
+        p = await asyncio.create_subprocess_exec(
+            "/bin/bash",
+            "--noprofile",
+            "--norc",
+            "-l",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        # await workaround_get_agent_log(None, before_start=True)
+        stdout, stderr = await p.communicate(input="bash script.sh")
+        # pkdp("\n\n\n e={}\n\n\no={}", e, o)
+        if stdout or stderr:
+            write_to_log(stdout, stderr, "start")
+        # self.driver_details.pkupdate(
+        #     host=self.cfg.host,
+        #     username=self._creds.username,
+        # )
+        # await workaround_get_agent_log(None, before_start=False)
+
         # except asyncssh.misc.PermissionDenied:
         #     pkdlog("{}", pkdexc())
         #     self._srdb_root = None
