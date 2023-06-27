@@ -78,7 +78,7 @@ class SbatchDriver(job_driver.DriverBase):
                 "how long to wait before reading the agent log on start",
             ),
             agent_starting_secs=(
-                cls._AGENT_STARTING_SECS_DEFAULT * 3,
+                cls._AGENT_STARTING_SECS_DEFAULT * 20,
                 int,
                 "how long to wait for agent start",
             ),
@@ -183,7 +183,26 @@ disown
                     pkdexc(),
                 )
 
-        try:
+        async def workaround_get_agent_log(con, before_start=True):
+            try:
+                if not before_start:
+                    await tornado.gen.sleep(self.cfg.agent_log_read_sleep)
+                async with subprocess.Popen(
+                    f"/bin/cat {agent_start_dir}/{log_file}"
+                ) as p:
+                    o, e = await p.communicate()
+                    write_to_log(
+                        o, e, f"remote-{'before' if before_start else 'after'}-start"
+                    )
+            except Exception as e:
+                pkdlog(
+                    "{} e={} stack={}",
+                    self,
+                    e,
+                    pkdexc(),
+                )
+
+
             # async with asyncssh.connect(
             #     self.cfg.host,
             #     username=self._creds.username,
@@ -194,38 +213,39 @@ disown
             # ) as c:
                 # async with c.create_process("/bin/bash --noprofile --norc -l") as p:
             # p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-l"])
-            pkdp("\n\n\n script={}", script)
-            pkio.write_text("script.sh", script)
-            # ["/bin/bash", "--noprofile", "--norc", "-l"]
-            subprocess.Popen(["bash", "script.sh"])
-            # await get_agent_log(c, before_start=True)
-            # o, e = p.communicate(script)
+        pkdp("\n\n\n script={}", script)
+        pkio.write_text("script.sh", script)
+        # ["/bin/bash", "--noprofile", "--norc", "-l"]
+        async with subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-l"]) as p:
+            await workaround_get_agent_log(None, before_start=True)
+            o, e = p.communicate(input=script)
             # pkdp("\n\n\n e={}\n\n\no={}", e, o)
-            # if o or e:
-            #     write_to_log(o, e, "start")
-                # self.driver_details.pkupdate(
-                #     host=self.cfg.host,
-                #     username=self._creds.username,
-                # )
-                # await get_agent_log(c, before_start=False)
-        except asyncssh.misc.PermissionDenied:
-            pkdlog("{}", pkdexc())
-            self._srdb_root = None
-            # self._raise_sbatch_login_srexception("invalid-creds", op.msg)
-        except asyncssh.misc.ProtocolError:
-            pkdlog("{}", pkdexc())
-            raise sirepo.util.UserAlert(
-                f"Unable to connect to {self.cfg.host}. Please try again later.",
-            )
-        except OSError as e:
-            pkdlog("{}", pkdexc())
-            if e.errno == errno.EHOSTUNREACH:
-                raise sirepo.util.UserAlert(
-                    f"Host {self.cfg.host} unreachable. Please try again later.",
-                )
-            raise
-        finally:
-            self.pkdel("_creds")
+            if o or e:
+                write_to_log(o, e, "start")
+            # self.driver_details.pkupdate(
+            #     host=self.cfg.host,
+            #     username=self._creds.username,
+            # )
+            await workaround_get_agent_log(None, before_start=False)
+        # except asyncssh.misc.PermissionDenied:
+        #     pkdlog("{}", pkdexc())
+        #     self._srdb_root = None
+        #     pkdp("\n\n\n PERMISSION WAS DENIED \n\n\n\n")
+        #     # self._raise_sbatch_login_srexception("invalid-creds", op.msg)
+        # except asyncssh.misc.ProtocolError:
+        #     pkdlog("{}", pkdexc())
+        #     raise sirepo.util.UserAlert(
+        #         f"Unable to connect to {self.cfg.host}. Please try again later.",
+        #     )
+        # except OSError as e:
+        #     pkdlog("{}", pkdexc())
+        #     if e.errno == errno.EHOSTUNREACH:
+        #         raise sirepo.util.UserAlert(
+        #             f"Host {self.cfg.host} unreachable. Please try again later.",
+        #         )
+        #     raise
+        # finally:
+        #     self.pkdel("_creds")
 
     def _agent_start_dev(self):
         if not pkconfig.in_dev_mode():
