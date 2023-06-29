@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 from pykern import pkconfig
 from pykern import pkio
 from pykern import pkjson
+from pykern import pkcompat
 from pykern.pkcollections import PKDict
 from pykern.pkdebug import pkdp, pkdlog, pkdexc
 from sirepo import job
@@ -217,18 +218,18 @@ disown
         pkdp("\n\n\n script={}", script)
         pkio.write_text("script.sh", script)
         # ["/bin/bash", "--noprofile", "--norc", "-l"]
-        p = await asyncio.create_subprocess_exec(
-            "/bin/bash",
-            "--noprofile",
-            "--norc",
-            "-l",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE)
+        p = tornado.process.Subprocess(
+                ["/bin/bash", "script.sh"],
+                stdin=subprocess.DEVNULL,
+                # stdout=tornado.process.Subprocess.STREAM,
+                # stderr=subprocess.STDOUT,
+                # env=env,
+            )
         # await workaround_get_agent_log(None, before_start=True)
-        stdout, stderr = await p.communicate(input="bash script.sh")
+        # r = await p.stdin.write(pkcompat.to_bytes(script))
         # pkdp("\n\n\n e={}\n\n\no={}", e, o)
-        if stdout or stderr:
-            write_to_log(stdout, stderr, "start")
+        # if stdout or stderr:
+        #     write_to_log(stdout, stderr, "start")
         # self.driver_details.pkupdate(
         #     host=self.cfg.host,
         #     username=self._creds.username,
