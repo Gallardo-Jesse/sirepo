@@ -709,7 +709,8 @@ class _SbatchRun(_SbatchCmd):
             return
         script = self._sbatch_script()
         pkdp("\n\n\n\n\n\n script =\n {}", script)
-        pkio.write_text("./script.txt", script)
+        # pkio.write_text("./script.txt", script)
+        script.copy(pkdp(pkio.py_path("script.text")))
         p = subprocess.run(
             ("sbatch", script),
             close_fds=True,
