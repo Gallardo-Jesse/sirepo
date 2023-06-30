@@ -341,6 +341,7 @@ SIREPO.app.directive('geometry3d', function(appState, cloudmcService, frameCache
             let colorbar = null;
             let colorbarPtr = null;
             let fieldData = [];
+            let isMouseDown = false;
             let mesh = null;
             let minField, maxField;
             let picker = null;
@@ -648,6 +649,7 @@ SIREPO.app.directive('geometry3d', function(appState, cloudmcService, frameCache
                     return [null, null];
                 }
 
+                isMouseDown = true;
                 if (vtkScene.renderer !== callData.pokedRenderer || ! isGeometryOnly) {
                     return;
                 }
@@ -835,7 +837,7 @@ SIREPO.app.directive('geometry3d', function(appState, cloudmcService, frameCache
                     };
                 }
 
-                if (vtkScene.renderer !== callData.pokedRenderer) {
+                if (vtkScene.renderer !== callData.pokedRenderer || isMouseDown) {
                     return;
                 }
                 const pos = callData.position;
@@ -1012,6 +1014,7 @@ SIREPO.app.directive('geometry3d', function(appState, cloudmcService, frameCache
                 picker = vtk.Rendering.Core.vtkCellPicker.newInstance();
                 picker.setPickFromList(true);
                 vtkScene.renderWindow.getInteractor().onLeftButtonPress(handlePick);
+                vtkScene.renderWindow.getInteractor().onLeftButtonRelease(() => { isMouseDown = false; });
                 if (! isGeometryOnly) {
                     vtkScene.renderWindow.getInteractor().onMouseMove(showFieldInfo);
                 }
