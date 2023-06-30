@@ -189,7 +189,7 @@ disown
             try:
                 if not before_start:
                     await tornado.gen.sleep(self.cfg.agent_log_read_sleep)
-                async with subprocess.Popen(
+                with tornado.process.Subprocess(
                     f"/bin/cat {agent_start_dir}/{log_file}"
                 ) as p:
                     o, e = await p.communicate()
@@ -225,7 +225,6 @@ disown
                 # stderr=subprocess.STDOUT,
                 # env=env,
             )
-        # await workaround_get_agent_log(None, before_start=True)
         # r = await p.stdin.write(pkcompat.to_bytes(script))
         # pkdp("\n\n\n e={}\n\n\no={}", e, o)
         # if stdout or stderr:
