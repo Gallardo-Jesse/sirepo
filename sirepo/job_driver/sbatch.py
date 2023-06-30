@@ -221,8 +221,8 @@ disown
         p = tornado.process.Subprocess(
                 ["/bin/bash", "script.sh"],
                 stdin=subprocess.DEVNULL,
-                # stdout=tornado.process.Subprocess.STREAM,
-                # stderr=subprocess.STDOUT,
+                stdout=open("/home/vagrant/sbatch_out.txt", "w"),
+                stderr=subprocess.STDOUT,
                 # env=env,
             )
         # r = await p.stdin.write(pkcompat.to_bytes(script))
