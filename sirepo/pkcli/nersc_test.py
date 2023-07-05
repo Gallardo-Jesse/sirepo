@@ -16,6 +16,28 @@ import sirepo.sim_data
 import subprocess
 
 
+def parallel():
+    def _render_resource(run_dir, filename):
+        res = run_dir.join(filename)
+        pykern.pkjinja.render_file(
+            sirepo.resource.file_path(
+                "nersc_test/" + filename + pykern.pkjinja.RESOURCE_SUFFIX
+            ),
+            PKDict(run_dir=run_dir),
+            output=res,
+        )
+        return res
+
+    d = pykern.pkio.py_path("sirepo_run_dir")
+    pykern.pkio.unchecked_remove(d)
+    d.ensure(dir=True)
+    _render_resource(d, "parameters.py")
+    p = subprocess.run(
+        ["sbatch", _render_resource(d, "sbatch_script.sh")]
+    )
+    return "nersc_test.parallel PASS"
+
+
 def sequential(pkunit_deviance=None):
     """Test sequential process for use by NERSC inside SHIFTER
 

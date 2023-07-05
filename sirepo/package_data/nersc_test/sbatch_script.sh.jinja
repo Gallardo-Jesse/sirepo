@@ -23,4 +23,4 @@ export SIREPO_SIMULATION_DB_LOGGED_IN_USER='wqXeNM20'
 export SIREPO_SRDB_ROOT='/var/tmp/user/sirepo'
 export PYTHONSTARTUP=''
 source $HOME/.bashrc
-exec srun  python parameters.py
+exec srun  python '{{run_dir}}/parameters.py'
