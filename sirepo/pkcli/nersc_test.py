@@ -18,6 +18,8 @@ import subprocess
 
 def parallel():
     def _render_resource(run_dir, filename):
+        # TODO (gurhar1133): shared base class or just clear
+        # now why we need sirepo.resource.render_file()
         res = run_dir.join(filename)
         pykern.pkjinja.render_file(
             sirepo.resource.file_path(
