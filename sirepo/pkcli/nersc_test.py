@@ -21,12 +21,12 @@ def parallel():
         p = _Parallel(
             JOB_CMD_FILE="parameters.py",
             RESOURCE_DIR="nersc_test/",
-            RESULT_FILE=None,
+            RESULT_FILE="parallel.log",
             RUN_DIR="sirepo_run_dir",
             RUN_FILE="sbatch_script.sh",
             RUN_CMD="sbatch",
         )
-        p.prepare()
+        p.prepare(None)
         p.execute()
         return "nersc_test.parallel PASS"
     except Exception as e:
