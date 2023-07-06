@@ -17,33 +17,20 @@ import subprocess
 
 
 def parallel():
-    def _render_resource(run_dir, filename):
-        # TODO (gurhar1133): shared base class or just clear
-        # now why we need sirepo.resource.render_file()
-        res = run_dir.join(filename)
-        pykern.pkjinja.render_file(
-            sirepo.resource.file_path(
-                "nersc_test/" + filename + pykern.pkjinja.RESOURCE_SUFFIX
-            ),
-            PKDict(run_dir=run_dir),
-            output=res,
+    try:
+        p = _Parallel(
+            JOB_CMD_FILE="parameters.py",
+            RESOURCE_DIR="nersc_test/",
+            RESULT_FILE=None,
+            RUN_DIR="sirepo_run_dir",
+            RUN_FILE="sbatch_script.sh",
+            RUN_CMD="sbatch",
         )
-        return res
-
-    # TODO (gurhar1133): eliminate duplication in preparing
-    # run_dir etc (_Sequential.prepare()).
-    # shared class could have self.RUN_DIR, self.RESOURCE_FILE
-    # self.RUN_FILE etc and shared self._render_resource()
-    # written in a way to be easily swapped with sirepo.resource.render_file()
-    # when that's available
-    d = pykern.pkio.py_path("sirepo_run_dir")
-    pykern.pkio.unchecked_remove(d)
-    d.ensure(dir=True)
-    _render_resource(d, "parameters.py")
-    p = subprocess.run(
-        ["sbatch", _render_resource(d, "sbatch_script.sh")]
-    )
-    return "nersc_test.parallel PASS"
+        p.prepare()
+        p.execute()
+        return "nersc_test.parallel PASS"
+    except Exception as e:
+        return f"nersc_test parallel fail: error={e}\nunix_uid={os.geteuid()}\n{p}{pkdexc()}"
 
 
 def sequential(pkunit_deviance=None):
@@ -60,8 +47,15 @@ def sequential(pkunit_deviance=None):
     Returns:
         str: PASS or fail with diagnostic information
     """
-    s = _Sequential()
     try:
+        s = _Sequential(
+            JOB_CMD_FILE="sequential_job_cmd.json",
+            RESOURCE_DIR="nersc_test/",
+            RESULT_FILE="sequential_result.json",
+            RUN_DIR="sirepo_run_dir",
+            RUN_FILE="sequential_run.sh",
+            RUN_CMD="bash",
+        )
         s.prepare(pkunit_deviance)
         s.execute()
         return "nersc_test.sequential PASS"
@@ -69,14 +63,9 @@ def sequential(pkunit_deviance=None):
         return f"nersc_test sequential fail: error={e}\nunix_uid={os.geteuid()}\n{s}{pkdexc()}"
 
 
-class _Sequential(PKDict):
-    """Run a sequential job by mocking the input to job_cmd"""
 
-    JOB_CMD_FILE = "sequential_job_cmd.json"
-    RESOURCE_DIR = "nersc_test/"
-    RESULT_FILE = "sequential_result.json"
-    RUN_DIR = "sirepo_run_dir"
-    RUN_FILE = "sequential_run.sh"
+class _NERSCTestBase(PKDict):
+    """Base class for parallel and sequential NERSC tests"""
 
     def prepare(self, pkunit_deviance):
         self.pkunit_deviance = pkunit_deviance
@@ -85,21 +74,18 @@ class _Sequential(PKDict):
         self.run_dir.ensure(dir=True)
         self.result_file = self.run_dir.join(self.RESULT_FILE)
         self.user = sirepo.const.MOCK_UID
-        # job_cmd_file must be first, because used by _render_resource
+        # job_cmd_file must be first for _Sequential, because used by _render_resource
         self.job_cmd_file = self._job_cmd_file()
         self.run_file = self._render_resource(self.RUN_FILE)
 
     def execute(self):
-        p = subprocess.run(["bash", self.run_file], capture_output=True, text=True)
+        p = subprocess.run([self.RUN_CMD, self.run_file], capture_output=True, text=True)
         if p.returncode != 0:
             raise RuntimeError(
                 f"unexpected returncode={p.returncode} stderr={p.stderr}"
             )
         self.result_file.write(p.stdout)
         self.result_text = p.stdout
-        self.result_parsed = pykern.pkjson.load_any(self.result_text)
-        if self.result_parsed.state != "completed":
-            raise RuntimeError(f"unexpected result state={self.result_parsed.state}")
 
     def _file_path(self, filename):
         return sirepo.resource.file_path(
@@ -110,17 +96,6 @@ class _Sequential(PKDict):
         if self.pkunit_deviance:
             return pykern.pkio.py_path(self.pkunit_deviance)
         return self._render_resource(self.JOB_CMD_FILE)
-
-    def __str__(self):
-        res = "Internal state:\n"
-        for k in ("run_dir", "run_file", "result_file"):
-            res += f"{k}={self.get(k)}\n"
-        if "result_text" in self:
-            if "result_parsed" in self:
-                res += "result_parsed=" + pykern.pkjson.dump_pretty(self.result_parsed)
-            else:
-                res += "result_text=" + self.result_text
-        return res
 
     def _render_resource(self, filename):
         res = self.run_dir.join(filename)
@@ -134,3 +109,27 @@ class _Sequential(PKDict):
             output=res,
         )
         return res
+
+
+class _Sequential(_NERSCTestBase):
+    """Run a sequential job by mocking the input to job_cmd"""
+    def execute(self):
+        super().execute()
+        self.result_parsed = pykern.pkjson.load_any(self.result_text)
+        if self.result_parsed.state != "completed":
+            raise RuntimeError(f"unexpected result state={self.result_parsed.state}")
+
+    def __str__(self):
+        res = "Internal state:\n"
+        for k in ("run_dir", "run_file", "result_file"):
+            res += f"{k}={self.get(k)}\n"
+        if "result_text" in self:
+            if "result_parsed" in self:
+                res += "result_parsed=" + pykern.pkjson.dump_pretty(self.result_parsed)
+            else:
+                res += "result_text=" + self.result_text
+        return res
+
+
+class _Parallel(_NERSCTestBase):
+    pass

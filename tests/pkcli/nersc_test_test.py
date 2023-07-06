@@ -5,7 +5,7 @@
 :license: http://www.apache.org/licenses/LICENSE-2.0.html
 """
 import pytest
-
+from pykern.pkdebug import pkdp
 
 def test_conformance():
     _do(
