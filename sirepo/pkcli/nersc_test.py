@@ -15,7 +15,7 @@ import sirepo.resource
 import sirepo.sim_data
 import subprocess
 
-
+# TODO (gurhar1133): remove repitition in parallel() and sequential()
 def parallel():
     try:
         p = _Parallel(
@@ -132,4 +132,6 @@ class _Sequential(_NERSCTestBase):
 
 
 class _Parallel(_NERSCTestBase):
+    # TODO (gurhar1133): needs to check RESULT_FILE in execute()
+    # after calling super().execute()
     pass
