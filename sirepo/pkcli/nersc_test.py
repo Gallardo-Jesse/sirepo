@@ -30,6 +30,12 @@ def parallel():
         )
         return res
 
+    # TODO (gurhar1133): eliminate duplication in preparing
+    # run_dir etc (_Sequential.prepare()).
+    # shared class could have self.RUN_DIR, self.RESOURCE_FILE
+    # self.RUN_FILE etc and shared self._render_resource()
+    # written in a way to be easily swapped with sirepo.resource.render_file()
+    # when that's available
     d = pykern.pkio.py_path("sirepo_run_dir")
     pykern.pkio.unchecked_remove(d)
     d.ensure(dir=True)
