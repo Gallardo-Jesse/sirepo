@@ -16,7 +16,7 @@ import sirepo.sim_data
 import subprocess
 
 # TODO (gurhar1133): remove repitition in parallel() and sequential()
-def parallel():
+def parallel(pkunit_deviance=None):
     try:
         p = _Parallel(
             JOB_CMD_FILE="parameters.py",
@@ -26,7 +26,7 @@ def parallel():
             RUN_FILE="sbatch_script.sh",
             RUN_CMD="sbatch",
         )
-        p.prepare(None)
+        p.prepare(pkunit_deviance)
         p.execute()
         return "nersc_test.parallel PASS"
     except Exception as e:
@@ -87,28 +87,22 @@ class _NERSCTestBase(PKDict):
         self.result_file.write(p.stdout)
         self.result_text = p.stdout
 
-    def _file_path(self, filename):
-        return sirepo.resource.file_path(
-            self.RESOURCE_DIR + filename + pykern.pkjinja.RESOURCE_SUFFIX
-        )
-
     def _job_cmd_file(self):
         if self.pkunit_deviance:
             return pykern.pkio.py_path(self.pkunit_deviance)
         return self._render_resource(self.JOB_CMD_FILE)
 
     def _render_resource(self, filename):
-        res = self.run_dir.join(filename)
-        pykern.pkjinja.render_file(
-            self._file_path(filename),
+        return sirepo.resource.render_resource(
+            filename,
+            self.RESOURCE_DIR,
+            self.run_dir,
             PKDict(
                 job_cmd_file=self.get("job_cmd_file"),
                 run_dir=self.run_dir,
                 user=self.user,
             ),
-            output=res,
         )
-        return res
 
 
 class _Sequential(_NERSCTestBase):
@@ -132,6 +126,8 @@ class _Sequential(_NERSCTestBase):
 
 
 class _Parallel(_NERSCTestBase):
-    # TODO (gurhar1133): needs to check RESULT_FILE in execute()
-    # after calling super().execute()
-    pass
+    """Run a parallel job mocking script that invokes 'sbatch'"""
+    def execute(self):
+        super().execute()
+        if self.result_text.strip() != "parallel test completed":
+            raise RuntimeError(f"unexpected result state={self.result_text}")
