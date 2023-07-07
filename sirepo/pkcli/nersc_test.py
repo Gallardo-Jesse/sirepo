@@ -87,22 +87,28 @@ class _NERSCTestBase(PKDict):
         self.result_file.write(p.stdout)
         self.result_text = p.stdout
 
+    def _file_path(self, filename):
+        return sirepo.resource.file_path(
+            self.RESOURCE_DIR + filename + pykern.pkjinja.RESOURCE_SUFFIX
+        )
+
     def _job_cmd_file(self):
         if self.pkunit_deviance:
             return pykern.pkio.py_path(self.pkunit_deviance)
         return self._render_resource(self.JOB_CMD_FILE)
 
     def _render_resource(self, filename):
-        return sirepo.resource.render_resource(
-            filename,
-            self.RESOURCE_DIR,
-            self.run_dir,
+        res = self.run_dir.join(filename)
+        pykern.pkjinja.render_file(
+            self._file_path(filename),
             PKDict(
                 job_cmd_file=self.get("job_cmd_file"),
                 run_dir=self.run_dir,
                 user=self.user,
             ),
+            output=res,
         )
+        return res
 
 
 class _Sequential(_NERSCTestBase):
