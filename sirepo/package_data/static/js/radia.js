@@ -972,7 +972,7 @@ SIREPO.app.directive('appHeader', function(activeSection, appState, panelState, 
                 </div>
               </app-header-right-sim-loaded>
               <app-settings>
-                    <li><a href data-ng-click="exportDmp()"><span class="glyphicon glyphicon-cloud-download"></span> Export Radia Dump</a></li>
+                    <li data-ng-show="canExport"><a href data-ng-click="exportDmp()"><span class="glyphicon glyphicon-cloud-download"></span> Export Radia Dump</a></li>
               </app-settings>
               <app-header-right-sim-list>
                 <ul class="nav navbar-nav sr-navbar-right">
@@ -982,6 +982,8 @@ SIREPO.app.directive('appHeader', function(activeSection, appState, panelState, 
             </div>
         `,
         controller: function($scope) {
+            $scope.canExport = false;
+
             $scope.exportDmp = function() {
                 requestSender.newWindow('exportArchive', {
                     '<simulation_id>': appState.models.simulation.simulationId,
@@ -993,6 +995,10 @@ SIREPO.app.directive('appHeader', function(activeSection, appState, panelState, 
                 $('#simulation-import').modal('show');
             };
             $scope.isImported = () => (appState.models.simulation || {}).dmpImportFile;
+
+            $scope.$on('radiaViewer.loaded', () => {
+                $scope.canExport = true;
+            });
         }
     };
 });
