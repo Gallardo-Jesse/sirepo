@@ -310,6 +310,7 @@
             ],
             "NERSCQueue": [
                 ["debug", "debug"],
+                ["interactive", "interactive"],
                 ["premium", "premium"],
                 ["realtime", "realtime"],
                 ["regular", "regular"]

@@ -58,7 +58,7 @@ LIB_FILE_LIST_URI = "/list.json"
 LIB_FILE_ROOT = None
 
 # POSIT: These are the same queues as in schema-common.common.enum.SbatchQueue
-NERSC_QUEUES = frozenset(("debug", "premium", "realtime", "regular"))
+NERSC_QUEUES = frozenset(("debug", "interactive", "premium", "realtime", "regular"))
 
 #: where user data files come in (job_supervisor)
 DATA_FILE_ROOT = None
