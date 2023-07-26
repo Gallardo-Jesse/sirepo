@@ -785,8 +785,8 @@ def validate_model(model_data, model_schema, enum_info):
                     if item not in enum_info[field_type]:
                         assert (
                             item in enum_info[field_type]
-                        ), '{}: invalid enum "{}" value for field "{}"'.format(
-                            item, field_type, k
+                        ), '?????{}: invalid enum "{}" value for field "{}" enum_info={}'.format(
+                            item, field_type, k, enum_info
                         )
         elif field_type == "Float":
             if not value:
@@ -818,6 +818,7 @@ def validate_models(model_data, model_schema):
     enum_info = parse_enums(model_schema["enum"])
     for k in model_data["models"]:
         if k in model_schema["model"]:
+            # pkdp("\n\n\n\n")
             validate_model(
                 model_data["models"][k],
                 model_schema["model"][k],
