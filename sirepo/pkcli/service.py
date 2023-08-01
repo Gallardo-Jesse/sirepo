@@ -116,6 +116,9 @@ def http():
             proc.kill()
 
     def _start(service, extra_environ, cwd=".", want_prefix=True):
+        pkdp("\n\n\n _starting service={}", service)
+        if "job_supervisor" in service:
+            pkdp("\n\n\n\njob_supervisor cfg={}, extra_environ={}", __cfg, extra_environ)
         if not want_prefix:
             prefix = ()
         else:
@@ -137,6 +140,7 @@ def http():
             (signal.SIGINT, signal.SIGTERM)
         ):
             e = PKDict()
+            pkdp("\n\n\n\ncfg: {}, e: {}", __cfg, e)
             if _cfg().react_port:
                 _install_react()
                 _start(
