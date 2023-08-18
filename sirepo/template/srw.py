@@ -4,7 +4,6 @@
 :copyright: Copyright (c) 2015 RadiaSoft LLC.  All Rights Reserved.
 :license: http://www.apache.org/licenses/LICENSE-2.0.html
 """
-from pykern import pkcompat
 from pykern import pkio
 from pykern.pkcollections import PKDict
 from pykern.pkdebug import pkdc, pkdexc, pkdlog, pkdp
@@ -23,7 +22,6 @@ import re
 import sirepo.job
 import sirepo.mpi
 import sirepo.sim_data
-import sirepo.uri_router
 import sirepo.util
 import srwl_bl
 import srwlib
@@ -335,6 +333,12 @@ def clean_run_dir(run_dir):
         zip_dir.remove()
 
 
+def export_filename(sim_filename, filename):
+    if filename not in ("run.py", "sirepo-data.json"):
+        return f"{sim_filename.replace('.zip', '')}/{filename}"
+    return filename
+
+
 def _extract_coherent_modes(model, out_info):
     out_file = "combined-modes.dat"
     wfr = srwlib.srwl_uti_read_wfr_cm_hdf5(_file_path=out_info.filename)
@@ -538,11 +542,12 @@ async def import_file(req, tmp_dir, qcall, **kwargs):
     i = None
     r = None
     try:
-        r = kwargs["reply_op"](simulation_db.default_data(SIM_TYPE))
+        r = kwargs["srw_save_sim"](simulation_db.default_data(SIM_TYPE))
         d = pykern.pkjson.load_any(r.content_as_str())
         r.destroy()
         r = None
         i = d.models.simulation.simulationId
+        serial = d.models.simulation.simulationSerial
         b = d.models.backgroundImport = PKDict(
             arguments=req.import_file_arguments,
             python=req.form_file.as_str(),
@@ -602,6 +607,7 @@ async def import_file(req, tmp_dir, qcall, **kwargs):
             )
         x = x.get(PARSED_DATA_ATTR)
         x.models.simulation.simulationId = i
+        x.models.simulation.simulationSerial = serial
         x = simulation_db.save_simulation_json(
             x, do_validate=True, fixup=True, qcall=qcall
         )
@@ -627,11 +633,24 @@ async def import_file(req, tmp_dir, qcall, **kwargs):
 
 
 def new_simulation(data, new_simulation_data, qcall=None, **kwargs):
+    def _sim_from_radia(models, d):
+        for m in ("simulation", "tabulatedUndulator", "electronBeamPosition"):
+            models[m].pkupdate(d[m])
+        f = d.tabulatedUndulator.magneticFile
+        t_basename = f"{d.sourceSimType}-{d.sourceSimId}-{f}"
+        models.tabulatedUndulator.magneticFile = t_basename
+        t = simulation_db.simulation_lib_dir(_SIM_DATA.sim_type(), qcall=qcall).join(
+            t_basename
+        )
+        simulation_db.simulation_dir(
+            d.sourceSimType, sid=d.sourceSimId, qcall=qcall
+        ).join(f).copy(t)
+
     sim = data.models.simulation
     sim.sourceType = new_simulation_data.sourceType
-    if _SIM_DATA.srw_is_gaussian_source(sim):
-        data.models.initialIntensityReport.sampleFactor = 0
-    elif _SIM_DATA.srw_is_dipole_source(sim):
+    if new_simulation_data.get("sourceSimType") == "radia":
+        _sim_from_radia(data.models, new_simulation_data)
+    if _SIM_DATA.srw_is_dipole_source(sim):
         data.models.intensityReport.method = "2"
     elif _SIM_DATA.srw_is_arbitrary_source(sim):
         data.models.sourceIntensityReport.method = "2"
@@ -772,6 +791,8 @@ def python_source_for_model(data, model, qcall, plot_reports=True, **kwargs):
     data.report = model or _SIM_DATA.SRW_RUN_ALL_MODEL
     data.report = re.sub("beamlineAnimation0", "initialIntensityReport", data.report)
     data.report = re.sub("beamlineAnimation", "watchpointReport", data.report)
+    if not _SIM_DATA.is_for_ml(data.report):
+        data.fdir = sirepo.util.secure_filename(data.models.simulation.name) + "/"
     return _generate_parameters_file(data, plot_reports=plot_reports, qcall=qcall)
 
 
@@ -1133,6 +1154,7 @@ def _beamline_animation_percent_complete(run_dir, res):
         if item.type == "watch":
             res.outputInfo.append(
                 PKDict(
+                    waitForData=True,
                     modelKey=f"beamlineAnimation{item.id}",
                     filename=_wavefront_pickle_filename(item.id),
                     id=item.id,
@@ -1145,6 +1167,7 @@ def _beamline_animation_percent_complete(run_dir, res):
                 # TODO(pjm): instead look at last byte == pickle.STOP, see template_common.read_last_csv_line()
                 wfr = pickle.load(f)
                 count += 1
+                info.waitForData = False
         except Exception as e:
             break
     res.frameCount = count
@@ -1802,6 +1825,7 @@ def _generate_beamline_optics(report, data, qcall=None):
         names=[n for n in res.names if n not in res.exclude],
         postPropagation=models.postPropagation,
         maxNameSize=max_name_size,
+        fdir=data.get("fdir", ""),
         nameMap=PKDict(
             apertureShape="ap_shape",
             asymmetryAngle="ang_as",
@@ -1901,6 +1925,7 @@ def _generate_parameters_file(data, plot_reports=False, run_dir=None, qcall=None
         data,
         is_run_mpi=_SIM_DATA.is_run_mpi(data),
     )
+    v.fdir = data.get("fdir", "")
     v.rs_type = dm.simulation.sourceType
     if v.rs_type == "t" and dm.tabulatedUndulator.undulatorType == "u_i":
         v.rs_type = "u"
@@ -1936,7 +1961,7 @@ def _generate_srw_main(data, plot_reports, beamline_info):
     ]
     if (plot_reports or is_for_rsopt) and _SIM_DATA.srw_uses_tabulated_zipfile(data):
         content.append(
-            'setup_magnetic_measurement_files("{}", v)'.format(
+            'setup_magnetic_measurement_files(v.fdir + "{}", v)'.format(
                 data.models.tabulatedUndulator.magneticFile
             )
         )
@@ -2015,7 +2040,7 @@ def _generate_srw_main(data, plot_reports, beamline_info):
             content.append("v.ss = True")
             if plot_reports:
                 content.append("v.ss_pl = 'e'")
-        if (run_all and source_type not in ("g", "m")) or report in "fluxReport":
+        if (run_all and source_type not in ("g", "m", "a")) or report in "fluxReport":
             content.append("v.sm = True")
             if plot_reports:
                 content.append("v.sm_pl = 'e'")
@@ -2173,7 +2198,7 @@ def _remap_3d(info, allrange, out, report):
 
 
 def _resize_report(report, ar2d, x_range, y_range):
-    width_pixels = int(report.intensityPlotsWidth)
+    width_pixels = int(report.get("intensityPlotsWidth", 0))
     if not width_pixels:
         # upper limit is browser's max html canvas size
         width_pixels = _CANVAS_MAX_SIZE
@@ -2273,6 +2298,7 @@ def _rsopt_jinja_context(data):
         fileBase=_SIM_DATA.EXPORT_RSOPT,
         forRSOpt=True,
         libFiles=_SIM_DATA.lib_file_basenames(data),
+        maxOuputDimension=model.maxOuputDimension,
         numCores=int(model.numCores),
         numWorkers=max(1, multiprocessing.cpu_count() - 1),
         numSamples=int(model.numSamples),

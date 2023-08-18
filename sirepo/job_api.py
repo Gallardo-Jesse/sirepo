@@ -5,17 +5,20 @@
 """
 from pykern import pkcompat, pkinspect, pkjson
 from pykern.pkcollections import PKDict
-from pykern.pkdebug import pkdc, pkdexc, pkdlog, pkdp, pkdpretty
+from pykern.pkdebug import pkdc, pkdexc, pkdlog, pkdp, pkdpretty, pkdformat
 from sirepo import simulation_db
 from sirepo.template import template_common
+import asyncio
 import contextlib
 import inspect
 import pykern.pkconfig
 import pykern.pkio
 import re
-import sirepo.quest
 import sirepo.auth
+import sirepo.feature_config
+import sirepo.flask
 import sirepo.job
+import sirepo.quest
 import sirepo.sim_data
 import sirepo.uri_router
 import sirepo.util
@@ -52,10 +55,15 @@ class API(sirepo.quest.API):
 
     @sirepo.quest.Spec("require_user")
     async def api_beginSession(self):
-        u = self.auth.logged_in_user()
+        """Starts beginSession request asynchronously
+
+        Returns:
+            SReply: always OK
+        """
         return await self._request_api(
+            _create_task=not sirepo.flask.in_request(),
             _request_content=PKDict(
-                uid=u,
+                uid=self.auth.logged_in_user(),
                 userDir=str(sirepo.simulation_db.user_path(qcall=self)),
             ),
         )
@@ -70,6 +78,14 @@ class API(sirepo.quest.API):
     async def api_downloadDataFile(
         self, simulation_type, simulation_id, model, frame, suffix=None
     ):
+        def _content_too_large(req):
+            return sirepo.util.ContentTooLarge(
+                "sim_type={} sid={} report={}",
+                req.type,
+                req.id,
+                req.req_data.report,
+            )
+
         # TODO(robnagler) validate suffix and frame
         req = self.parse_params(
             id=simulation_id,
@@ -92,7 +108,14 @@ class API(sirepo.quest.API):
                     req_data=req.req_data,
                     suffix=s,
                 )
-                assert not r.state == "error", f"error state in request=={r}"
+                if r.state == sirepo.job.CANCELED:
+                    # POSIT: Users can't cancel donwloadDataFile. So canceled means there was a
+                    # timeout (max_run_secs exceeded).
+                    raise _content_too_large(req)
+                if r.state == sirepo.job.ERROR:
+                    if r.get("errorCode") == sirepo.job.ERROR_CODE_RESPONSE_TOO_LARGE:
+                        raise _content_too_large(req)
+                    raise AssertionError(pkdformat("error state in request=={}", r))
                 f = d.listdir()
                 if len(f) > 0:
                     assert len(f) == 1, "too many files={}".format(f)
@@ -175,14 +198,16 @@ class API(sirepo.quest.API):
 
     @sirepo.quest.Spec("require_user")
     async def api_runSimulation(self):
-        r = self._request_content(PKDict(fixup_old_data=True))
+        r = self._request_content(PKDict(is_sim_data=True))
         if r.isParallel:
             r.isPremiumUser = self.auth.is_premium_user()
         return await self._request_api(_request_content=r)
 
     @sirepo.quest.Spec("require_user")
     async def api_runStatus(self):
-        return await self._request_api()
+        # runStatus receives models when an animation status if first queried
+        r = self._request_content(PKDict(is_sim_data=True))
+        return await self._request_api(_request_content=r)
 
     @sirepo.quest.Spec("require_user")
     async def api_sbatchLogin(self):
@@ -222,9 +247,9 @@ class API(sirepo.quest.API):
         return r
 
     async def _request_api(self, **kwargs):
-        def _api_name():
-            if "api_name" in kwargs:
-                return kwargs["api_name"]
+        def _api_name(value):
+            if value:
+                return value
             f = inspect.currentframe()
             for _ in range(_MAX_FRAME_SEARCH_DEPTH):
                 m = re.search(r"^api_.*$", f.f_code.co_name)
@@ -236,16 +261,21 @@ class API(sirepo.quest.API):
                     "{}: max frame search depth reached".format(f.f_code)
                 )
 
-        def _content_and_uri(kwargs):
+        def _args(kwargs):
+            res = PKDict()
             k = PKDict(kwargs)
-            u = k.pkdel("_request_uri") or self._supervisor_uri(sirepo.job.SERVER_URI)
+            res.uri = k.pkdel("_request_uri") or self._supervisor_uri(
+                sirepo.job.SERVER_URI
+            )
+            res.create_task = k.pkdel("_create_task")
+            res.api = _api_name(k.pkdel("api_name"))
             c = (
                 k.pkdel("_request_content")
                 if "_request_content" in k
                 else self._request_content(k)
             )
             c.pkupdate(
-                api=_api_name(),
+                api=res.api,
                 serverSecret=sirepo.job.cfg().server_secret,
             )
             if c.api in _MUST_HAVE_METHOD:
@@ -255,21 +285,29 @@ class API(sirepo.quest.API):
                 ), f"missing method for api={c.api} in content={list(c.keys())}"
             if c.api not in ("api_runStatus",):
                 pkdlog("api={} runDir={}", c.api, c.get("runDir"))
-            return c, u
+            res.content = c
+            return res
 
-        c, u = _content_and_uri(kwargs)
-        with self._reply_maybe_file(c) as d:
-            r = await tornado.httpclient.AsyncHTTPClient().fetch(
+        async def _wrap_future(value):
+            await value
+
+        a = _args(kwargs)
+        with self._reply_maybe_file(a.content) as d:
+            r = tornado.httpclient.AsyncHTTPClient().fetch(
                 tornado.httpclient.HTTPRequest(
-                    body=pkjson.dump_bytes(c),
+                    body=pkjson.dump_bytes(a.content),
                     connect_timeout=60,
                     headers=PKDict({"Content-type": "application/json"}),
                     method="POST",
                     request_timeout=0,
-                    url=u,
+                    url=a.uri,
                     validate_cert=sirepo.job.cfg().verify_tls,
                 ),
             )
+            if a.create_task:
+                asyncio.create_task(_wrap_future(r))
+                return self.reply_ok()
+            r = await r
             if not _JSON_TYPE.search(r.headers["content-type"]):
                 raise AssertionError(
                     f"expected json content-type={r.headers['content-type']}"
@@ -298,7 +336,7 @@ class API(sirepo.quest.API):
             # of the used values are modified by parse_post. If we have files (e.g. file_type, filename),
             # we need to use those values from parse_post
             d = self.parse_post(
-                fixup_old_data=kwargs.pkdel("fixup_old_data", False),
+                is_sim_data=kwargs.pkdel("is_sim_data", False),
                 id=True,
                 model=True,
                 check_sim_exists=True,

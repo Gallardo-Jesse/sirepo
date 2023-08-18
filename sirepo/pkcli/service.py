@@ -45,8 +45,8 @@ def flask():
     with pkio.save_chdir(_run_dir()) as r:
         sirepo.pkcli.setup_dev.default_command()
         # above will throw better assertion, but just in case
-        assert pkconfig.channel_in("dev")
-        app = sirepo.modules.import_and_init("sirepo.server").init_app(
+        assert pkconfig.in_dev_mode()
+        app = sirepo.modules.import_and_init("sirepo.server", want_flask=True).init_app(
             use_reloader=_cfg().use_reloader,
             is_server=True,
         )
@@ -56,7 +56,9 @@ def flask():
         serving.click = None
         app.run(
             exclude_patterns=[str(r.join("*"))],
-            extra_files=sirepo.util.files_to_watch_for_reload("json"),
+            extra_files=sirepo.util.files_to_watch_for_reload("json")
+            if _cfg().use_reloader
+            else [],
             host=_cfg().ip,
             port=_cfg().port,
             reloader_type="stat",
@@ -129,7 +131,7 @@ def http():
             )
         )
 
-    assert pkconfig.channel_in("dev")
+    assert pkconfig.in_dev_mode()
     try:
         with pkio.save_chdir(_run_dir()), _handle_signals(
             (signal.SIGINT, signal.SIGTERM)
@@ -159,41 +161,16 @@ def http():
 
 
 def jupyterhub():
-    assert pkconfig.channel_in("dev")
+    assert pkconfig.in_dev_mode()
     sirepo.template.assert_sim_type("jupyterhublogin")
-    # POSIT: versions same in container-beamsim-jupyter/build.sh
-    # Order is important: jupyterlab-server should be last so it isn't
-    # overwritten with a newer version.
-    for m, v in ("jupyterhub", "1.4.2"), (
-        "jupyterlab",
-        "3.1.14 jupyterlab-server==2.8.2",
-    ):
-        try:
-            importlib.import_module(m)
-        except ModuleNotFoundError:
-            pkcli.command_error(
-                "{}: not installed run `pip install {}=={}`",
-                m,
-                m,
-                v,
-            )
     with pkio.save_chdir(_run_dir().join("jupyterhub").ensure(dir=True)) as d:
-        pksubprocess.check_call_with_signals(
-            (
-                "jupyter",
-                "serverextension",
-                "enable",
-                "--py",
-                "jupyterlab",
-                "--sys-prefix",
-            )
-        )
         f = d.join("conf.py")
         pkjinja.render_resource(
             "jupyterhub_conf.py",
             PKDict(_cfg()).pkupdate(
                 # POSIT: Running with nginx and uwsgi
                 sirepo_uri=f"http://{socket.getfqdn()}:{_cfg().nginx_proxy_port}",
+                jupyterhub_debug=sirepo.feature_config.cfg().debug_mode,
                 **sirepo.sim_api.jupyterhublogin.cfg(),
             ),
             output=f,
@@ -208,7 +185,7 @@ def nginx_proxy():
     """
     import sirepo.template
 
-    assert pkconfig.channel_in("dev")
+    assert pkconfig.in_dev_mode()
     run_dir = _run_dir().join("nginx_proxy").ensure(dir=True)
     with pkio.save_chdir(run_dir) as d:
         f = run_dir.join("default.conf")
@@ -235,7 +212,7 @@ def server():
 
 def tornado():
     with pkio.save_chdir(_run_dir()) as r:
-        d = pkconfig.channel_in("dev")
+        d = pkconfig.in_dev_mode()
         if d:
             sirepo.pkcli.setup_dev.default_command()
             if _cfg().use_reloader:
@@ -245,7 +222,7 @@ def tornado():
                     tornado.autoreload.watch(f)
         pkdlog("ip={} port={}", _cfg().ip, _cfg().port)
         sirepo.modules.import_and_init("sirepo.uri_router").start_tornado(
-            debug=d,
+            debug=sirepo.feature_config.cfg().debug_mode,
             ip=_cfg().ip,
             port=_cfg().port,
         )
@@ -257,7 +234,7 @@ def uwsgi():
     with pkio.save_chdir(run_dir):
         values = _cfg().copy()
         values["logto"] = (
-            None if pkconfig.channel_in("dev") else str(run_dir.join("uwsgi.log"))
+            None if pkconfig.in_dev_mode() else str(run_dir.join("uwsgi.log"))
         )
         # uwsgi.py must be first, because values['uwsgi_py'] referenced by uwsgi.yml
         for f in ("uwsgi.py", "uwsgi.yml"):
@@ -278,11 +255,6 @@ def _cfg():
                 _cfg_port,
                 "port on which jupyterhub listens",
             ),
-            jupyterhub_debug=(
-                True,
-                bool,
-                "turn on debugging for jupyterhub (hub, spawner, ConfigurableHTTPProxy)",
-            ),
             nginx_proxy_port=(
                 sirepo.const.PORT_DEFAULTS.nginx_proxy,
                 _cfg_port,
@@ -294,7 +266,7 @@ def _cfg():
                 "port on which uwsgi or http listens",
             ),
             react_port=(
-                sirepo.const.PORT_DEFAULTS.react,
+                sirepo.const.PORT_DEFAULTS.react if pkconfig.in_dev_mode() else None,
                 _cfg_port,
                 "port on which react listens",
             ),
@@ -304,8 +276,8 @@ def _cfg():
             # so limit to 128, which is probably more than enough with
             # this application.
             threads=(10, _cfg_int(1, 128), "how many uwsgi threads in each process"),
-            tornado=(False, bool, "use tornado for server"),
-            use_reloader=(pkconfig.channel_in("dev"), bool, "use the server reloader"),
+            tornado=(pkconfig.in_dev_mode(), bool, "use tornado for server"),
+            use_reloader=(pkconfig.in_dev_mode(), bool, "use the server reloader"),
         )
     return __cfg
 

@@ -151,7 +151,6 @@
             "item": ":"
         },
         "objectScale": 0.001,
-        "rawExamples": ["Dipole", "Wiggler"],
         "toolbarItems": [
             {
                 "canDrag": true,
@@ -277,9 +276,8 @@
             ["dipoleC", "C-Bend"],
             ["dipoleH", "H-Bend"]
         ],
-        "DivisionType": [
+        "SegmentationType": [
             ["cyl", "Cylindrical"],
-            ["", "None"],
             ["pln", "Planar"]
         ],
         "Elevation": [
@@ -324,6 +322,7 @@
             ["custom", "Custom"]
         ],
         "ObjectCutType": [
+            ["objectCut", "Plane"],
             ["objectBevel", "Bevel"],
             ["objectFillet", "Fillet"]
         ],
@@ -425,6 +424,7 @@
             "_super": ["_", "model", "extrudedObject"],
             "numSides": ["Number of Sides", "Integer", 10, "A cylinder is approximated by a regular polyhedron of this number of sides", 6],
             "radius": ["Radius", "Float", 5.0, "", 0.0],
+            "segmentation": ["Segmentation Type", "SegmentationType", "cyl"],
             "type": ["_", "ObjectType", "cylinder"]
         },
         "cee": {
@@ -458,11 +458,11 @@
             "dipoleType": ["_", "DipoleType", "dipoleBasic"],
             "gap": ["Gap [mm]", "Float", 1.0, "", 0.0],
             "pole": ["Pole", "model.geomObject", {
-                "bevels": [],
                 "center": [0.0, 0.0, 1.0],
                 "color": "#ff00ff",
                 "segments": [4, 4, 4],
                 "magnetization": [0.0, 0.0, 1.0],
+                "modifications": [],
                 "name": "pole",
                 "remanentMag": 1.0,
                 "material": "NdFeB",
@@ -732,6 +732,7 @@
         "extrudedPoints": {
             "_super": ["_", "model", "extrudedPoly"],
             "pointsFile": ["File", "InputFile", "", "File must be comma-delimited .csv or .txt with no header row and no empty columns", false],
+            "preservePointsOnImport": ["Preserve Points on Import", "Boolean", "1", "When true, the imported values of the points are preserved; otherwise the points are shifted relative to the center you specify. In any case the object is free to move after import"],
             "referencePoints": ["Points", "Points", []],
             "type": ["_", "ObjectType", "extrudedPoints"]
         },
@@ -763,7 +764,7 @@
             "inProgressText": ["_", "String", "Calculating"],
             "plotAxis": ["Plot Axis", "BeamAxis", "z"],
             "jobRunMode": ["Execution Mode", "JobRunMode", "parallel"],
-            "tasksPerNode": ["Tasks per node", "Integer", 32],
+            "tasksPerNode": ["Tasks per node", "Integer", 128],
             "sbatchHours": ["Hours", "Float", 0.4],
             "sbatchQueue": ["Queue", "NERSCQueue", "debug"],
             "sbatchCores": ["Cores", "Integer", 1],
@@ -806,17 +807,24 @@
         "geomObject": {
             "_super": ["_", "model", "radiaObject"],
             "center": ["Center [mm]", "FloatArray", [0.0, 0.0, 0.0], "", ["x", "y", "z"]],
-            "segments": ["Num Segments", "IntArray", [1, 1, 1], "", ["N$_{{ model.type == 'cylinder' ? '{rad}' : 'x' }}$", "N$_{{ model.type == 'cylinder' ? '{az}' : 'y' }}$", "N$_{{ model.type == 'cylinder' ? '{ax}' : 'z' }}$"], [1, 1, 1]],
             "id": ["_", "RandomId", ""],
             "layoutShape":  ["_", "String", "rect"],
             "magnetization": ["Magentization [T]", "FloatArray", [0.0, 0.0, 0.0], "", ["x", "y", "z"]],
-            "modifications": ["", "ModelArrayTable", [], "", ["objectBevel", "objectFillet"]],
+            "modifications": ["", "ModelArrayTable", [], "", ["objectCut", "objectBevel", "objectFillet"]],
             "remanentMag": ["Remanent Magnetization [T]", "Float", 0.0, "", 0.0],
             "material": ["Material", "MaterialType", "Xc06"],
             "materialFile": ["Tabulated H-B Curve from File", "HBFile", "", "File must be comma-delimited .csv or .txt with no header row and no empty columns (H, B in Tesla)"],
+            "remanentMag": ["Remanent Magnetization [T]", "Float", 0.0, "", 0.0],
+            "segmentation": ["Segmentation Type", "SegmentationType", "pln"],
+            "segmentationCylAxis": ["Segment Axis", "BeamAxis", "z"],
+            "segmentationCylPoint": ["Segment Origin", "FloatArray", [0, 0, 0], "", ["x", "y", "z"]],
+            "segmentationCylRadius": ["Segment Radial Width [mm]", "Float", 5.0],
+            "segmentationCylRatio": ["Segment Axis Ratio", "Float", 1.0, "Ratio of {{ appState.models.geomObject.segmentationCylAxisMajor }} to {{ appState.models.geomObject.segmentationCylAxisMinor }} axes of base (1.0 = circular)", 0.0],
+            "segmentationCylUseObjectCenter": ["Use object center as origin", "Boolean", "1"],
+            "segments": ["Segments", "IntArray", [1, 1, 1], "", ["N$\\small{{ appState.models.geomObject.segmentation == 'cyl' ? '{rad}' : '{x}' }}$", "N$\\small{{ appState.models.geomObject.segmentation == 'cyl' ? '{az}' : '{y}' }}$", "N$\\small{{ appState.models.geomObject.segmentation == 'cyl' ? '{ax}' : '{z}' }}$"], [1, 1, 1]],
             "shapeButton": ["Shape", "ShapeButton", {}],
-            "type": ["Shape Type", "ObjectType", "cuboid"],
-            "size": ["Size [mm]", "FloatArray", [10.0, 10.0, 10.0], "", ["x", "y", "z"], [0, 0, 0]]
+            "size": ["Size [mm]", "FloatArray", [10.0, 10.0, 10.0], "", ["x", "y", "z"], [0, 0, 0]],
+            "type": ["Shape Type", "ObjectType", "cuboid"]
         },
         "jay": {
             "_super": ["_", "model", "stemmed"],
@@ -856,6 +864,7 @@
         "magnetDisplay": {
             "alpha": ["Alpha", "Range", 1.0, "", 0.0, 1.0],
             "bgColor": ["Background Color", "Color", "#ffffff"],
+            "showMarker": ["Show axis marker", "Boolean", "1"],
             "fieldType": ["Field", "FieldType", "M"],
             "notes": ["Notes", "Text", ""],
             "viewType": ["View", "ViewType", "objects"]
@@ -875,17 +884,19 @@
             "_super": ["_", "model", "objectCut"],
             "amountVert": ["Vertical Cut [mm]", "Float", 1.0],
             "amountHoriz": ["Horizontal Cut [mm]", "Float", 1.0],
+            "cutAxis": ["Cut Axis", "BeamAxis", "z", "Direction perpendicular to cross-section of interest"],
             "cutDir": ["", "Array", [0, 0, 1]],
+            "cutRemoval": ["Removal Side", "CutRemoval", "1", "Determines which side of the cut plane to remove"],
             "edge": ["Corner", "BevelEdge", "0", "Corner of cross-sectional footprint to cut"],
             "heightDir": ["", "Array", [0, 1, 0]],
             "type": ["_", "ObjectCutType", "objectBevel"],
             "widthDir": ["", "Array", [1, 0, 0]]
         },
         "objectCut": {
-            "cutAxis": ["Cut Axis", "BeamAxis", "z", "Direction perpendicular to cross-section of interest"],
-            "cutRemoval": ["Removal Side", "CutRemoval", "1", "Determines which side of the cut plane to remove"],
+            "cutPlane": ["Cut Plane", "FloatArray", [0, 0, 1], "Normal of the cut plane", ["x", "y", "z"]],
             "cutPoint": ["Cut Point", "FloatArray", [0, 0, 0], "", ["x", "y", "z"]],
-            "type": ["_", "ObjectCutType", "objectBevel"]
+            "useObjectCenter": ["Relative to Object Center", "Boolean", "0"],
+            "type": ["_", "ObjectCutType", "objectCut"]
         },
         "objectFillet": {
             "cutAxis": ["Cut Axis", "BeamAxis", "z", "Direction perpendicular to cross-section of interest"],
@@ -905,7 +916,7 @@
             "_super": ["_", "model", "radiaObject"],
             "axis": ["Axis", "BeamAxis", "y"],
             "center": ["Center [mm]", "FloatArray", [0.0, 0.0, 0.0], "", ["x", "y", "z"]],
-            "currentDensity": ["Current Density [A/$mm^2$]", "Float", -2000.0],
+            "currentDensity": ["Current Density [A/$mm^2$]", "Float", -0.5],
             "fieldCalc": ["Field Calculation", "AutoManual", "auto", ""],
             "height": ["Height ({{ appState.models.racetrack.axis }}) [mm]", "Float", 105.0, "Measured along axis"],
             "numSegments": ["Number of Corner Segments", "Integer", 3, "", 0],
@@ -941,6 +952,7 @@
         },
         "simulation": {
             "appMode": ["", "ApplicationMode", "default"],
+            "areObjectsUnlockable": ["_", "Boool", true],
             "beamAxis": ["Beam Axis", "BeamAxis", "z", "The beam will travel along this axis, used when exporting fields"],
             "coordinateSystem": ["Coordinate System", "CoordinateSystem" , "standard", "Ordering of spatial variables. Use Standard for [x, y, z] or Beam for [width, height, length]"],
             "dipoleType": ["Dipole Type", "DipoleType", "dipoleBasic"],
@@ -959,7 +971,7 @@
             "precision": ["Precision (T)", "Float", 0.00010, "", ""],
             "result": ["Result", "String", ""],
             "jobRunMode": ["Execution Mode", "JobRunMode", "parallel"],
-            "tasksPerNode": ["Processes per node", "Integer", 32],
+            "tasksPerNode": ["Processes per node", "Integer", 128],
             "sbatchHours": ["Hours", "Float", 0.4],
             "sbatchQueue": ["Queue", "NERSCQueue", "debug"],
             "sbatchCores": ["Cores", "Integer", 1],
@@ -967,8 +979,9 @@
         },
         "stl": {
             "_super": ["_", "model", "geomObject"],
-            "type": ["_", "ObjectType", "stl"],
-            "file": ["STL File", "InputFile", ""]
+            "file": ["STL File", "InputFile", ""],
+            "preserveVerticesOnImport": ["Preserve Vertices on Import", "Boolean", "1", "When true, the imported values of the vertices are preserved; otherwise the vertices are shifted relative to the center you specify. In any case the object is free to move after import"],
+            "type": ["_", "ObjectType", "stl"]
         },
         "spatialTransform": {
             "_super": ["_", "model", "transform"]
@@ -1054,11 +1067,11 @@
             "magnetCrossSection": ["Cross Section [mm]", "FloatArray", [65.0, 45.0], "", ["Width ({{ appState.models.simulation.widthAxis }})", "Height ({{ appState.models.simulation.heightAxis }})"], [0, 0]],
             "magnetLength": ["Length ({{ appState.models.simulation.beamAxis }}) [mm]", "Float", 18.0],
             "pole": ["Pole", "model.geomObject", {
-                "bevels": [],
                 "color": "#ff00ff",
                 "segments": [2, 5, 2],
                 "magnetization": [0.0, 0.0, 0.0],
                 "materialFile": "VaPermendur.csv",
+                "modifications": [],
                 "name": "pole",
                 "remanentMag": 0.0,
                 "material": "custom",
@@ -1313,8 +1326,15 @@
                 ["Geometry", [
                     "extrudedPoints.pointsFile",
                     "extrudedPoints.referencePoints",
+                    "extrudedPoints.preservePointsOnImport",
                     "center",
                     "size",
+                    "segmentation",
+                    "segmentationCylAxis",
+                    "segmentationCylRatio",
+                    "segmentationCylUseObjectCenter",
+                    "segmentationCylPoint",
+                    "segmentationCylRadius",
                     "segments",
                     "cylinder.radius",
                     "extrudedObject.extrusionAxis",
@@ -1327,7 +1347,8 @@
                     "stemmed.stemPosition",
                     "jay.hookHeight",
                     "jay.hookWidth",
-                    "stl.file"
+                    "stl.file",
+                    "stl.preserveVerticesOnImport"
                 ]],
                 ["Material", [
                     "material",
@@ -1384,6 +1405,7 @@
                 "viewType",
                 "bgColor",
                 "alpha",
+                "showMarker",
                 "fieldType",
                 "fieldDisplay.colorMap",
                 "fieldDisplay.scaling"
@@ -1422,6 +1444,15 @@
                 "amountHoriz",
                 "amountVert",
                 "cutRemoval"
+            ]
+        },
+        "objectCut": {
+            "title": "Plane",
+            "basic": [],
+            "advanced": [
+                "cutPlane",
+                "cutPoint",
+                "useObjectCenter"
             ]
         },
         "objectFillet": {

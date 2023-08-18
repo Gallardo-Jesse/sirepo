@@ -8,6 +8,9 @@ SIREPO.app.config(() => {
         <div data-ng-switch-when="DateTimePicker" data-ng-class="fieldClass">
           <div data-date-time-picker="" data-model="model" data-field="field"></div>
         </div>
+        <div data-ng-switch-when="PresetTimePicker" data-ng-class="fieldClass">
+          <div data-preset-time-picker="" data-model="model" data-model-name="modelName"></div>
+        </div>
         <div data-ng-switch-when="ExecutedScansTable" class="col-sm-12">
           <div data-scans-table="" data-model-name="modelName" data-analysis-status="executed"></div>
         </div>
@@ -221,6 +224,12 @@ SIREPO.app.directive('dateTimePicker', function() {
                     $scope.model[$scope.field] = timeService.unixTime(newTime);
                 }
             });
+
+            $scope.$watch('model.' + $scope.field, function(newTime, oldTime) {
+                if (newTime !== oldTime) {
+                    $scope.dateTime = timeService.unixTimeToDate(newTime);
+                }
+            });
         }
     };
 });
@@ -258,6 +267,40 @@ SIREPO.app.directive('pngImage', function(plotting) {
         controller: function(raydataService, $element, $scope) {
             $scope.id = raydataService.nextPngImageId();
             raydataService.setPngDataUrl($element.children()[0], $scope.image);
+        }
+    };
+});
+
+SIREPO.app.directive('presetTimePicker', function() {
+    return {
+        restrict: 'A',
+        scope: {
+            model: '=',
+            modelName: '=',
+        },
+        template: `
+          <button class="btn btn-info btn-xs" data-ng-click="setSearchTimeLastHour()">Last Hour</button>
+          <button class="btn btn-info btn-xs" data-ng-click="setSearchTimeLastDay()">Last Day</button>
+        `,
+        controller: function(appState, timeService, $scope) {
+            $scope.setDefaultStartStopTime = () => {
+                if (!$scope.model.searchStartTime && !$scope.model.searchStopTime) {
+                    $scope.setSearchTimeLastHour();
+                    appState.saveChanges($scope.modelName);
+                }
+            };
+
+            $scope.setSearchTimeLastDay = () => {
+                $scope.model.searchStartTime = timeService.roundUnixTimeToMinutes(timeService.unixTimeOneDayAgo());
+                $scope.model.searchStopTime = timeService.roundUnixTimeToMinutes(timeService.unixTimeNow());
+            };
+
+            $scope.setSearchTimeLastHour = () => {
+                $scope.model.searchStartTime = timeService.roundUnixTimeToMinutes(timeService.unixTimeOneHourAgo());
+                $scope.model.searchStopTime = timeService.roundUnixTimeToMinutes(timeService.unixTimeNow());
+            };
+
+            $scope.setDefaultStartStopTime();
         }
     };
 });
@@ -378,12 +421,20 @@ SIREPO.app.directive('scansTable', function() {
                                 </div>
                               </div>
                             </div>
+                            <div data-ng-repeat="j in jsonFiles">
+                              <div class="panel panel-info">
+                                <div class="panel-heading"><span class="sr-panel-heading">{{ j.filename }}</span></div>
+                                <div class="panel-body">
+                                  <pre style="overflow: scroll; height: 150px">{{ formatJsonFile(j.json) }}</pre>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
                       <br/>
                       <div class="row">
-                        <div class="col-sm-offset-6 col-sm-3">
+                        <div class="col-sm-offset-4 col-sm-4">
                         <button data-dismiss="modal" class="btn btn-primary" style="width:100%">Close</button>
                         </div>
                       </div>
@@ -392,13 +443,14 @@ SIREPO.app.directive('scansTable', function() {
                 </div>
               </div>
             </div>
-            <div data-view-log-iframe-wrapper data-scan-id="runLogScanId" data-modal-id="runLogModalId"></div>
+            <div data-view-log-iframe-wrapper data-scan-id="runLogScanId" data-modal-id="runLogModalId" data-show-log="showLog"></div>
         `,
-        controller: function(appState, errorService, panelState, raydataService, requestSender, $scope, $interval, $timeout) {
+        controller: function(appState, errorService, panelState, raydataService, requestSender, timeService, $scope, $interval) {
             $scope.analysisModalId = 'sr-analysis-output-' + $scope.analysisStatus;
             $scope.availableColumns = [];
             $scope.awaitingScans = false;
             $scope.images = null;
+            $scope.jsonFiles = null;
             $scope.noScansReturned = false;
             $scope.orderByColumn = 'start';
             $scope.pdfSelectAllScans = false;
@@ -440,6 +492,7 @@ SIREPO.app.directive('scansTable', function() {
                     appState,
                     (json) => {
                         $scope.images = json.images;
+                        $scope.jsonFiles = json.jsonFiles;
                     },
                     {
                         method: 'analysis_output',
@@ -545,6 +598,10 @@ SIREPO.app.directive('scansTable', function() {
                 );
             };
 
+            $scope.formatJsonFile = (contents) => {
+                return JSON.stringify(contents, undefined, 2);
+            };
+
             $scope.getHeader = function() {
                 return cols.length > 0 ? ['select'].concat(cols) : [];
             };
@@ -632,11 +689,9 @@ SIREPO.app.directive('scansTable', function() {
             $scope.showRunLogModal = (scan, event) => {
                 event.stopPropagation();
                 $scope.runLogScanId = scan.uid;
-                $timeout(function(){
-                    $('#' + $scope.runLogModalId).modal('show');
-                });
+                $scope.showLog = true;
             };
-            
+
             $scope.showSelectAllButton = (index) => {
                 return index === 0;
             };
@@ -711,16 +766,29 @@ SIREPO.app.directive('viewLogIframeWrapper', function() {
         scope: {
             scanId: '<',
             modalId: '<',
+            showLog: '=',
         },
         template: `
+            <div data-ng-if="showLogModal()"></div>
             <div data-view-log-iframe data-log-path="logPath" data-log-html="log" data-log-is-loading="logIsLoading" data-modal-id="modalId"></div>
         `,
-        controller: function(appState, errorService, panelState, requestSender, $scope) {
+        controller: function(appState, errorService, panelState, requestSender, $scope, $element) {
             $scope.logIsLoading = false;
             $scope.log = null;
             $scope.logPath = null;
 
-            $(document).on('show.bs.modal','#' + $scope.modalId, function() {
+            $scope.showLogModal = () => {
+                if ($scope.showLog) {
+                    $scope.showLog = false;
+                    $('#' + $scope.modalId).modal('show');
+                }
+            };
+
+            $scope.$on('$destroy', () => {
+                $($element).off();
+            });
+
+            $($element).on('show.bs.modal','#' + $scope.modalId, function() {
                 $scope.logIsLoading = true;
                 requestSender.sendStatelessCompute(
                     appState,

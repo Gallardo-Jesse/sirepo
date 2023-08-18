@@ -11,6 +11,7 @@ from pykern.pkcollections import PKDict
 from pykern.pkdebug import pkdc, pkdexc, pkdlog, pkdp
 from sirepo import simulation_db
 import re
+import sirepo.const
 import sirepo.feature_config
 import sirepo.flask
 import sirepo.quest
@@ -26,15 +27,9 @@ import urllib.parse
 # TODO(pjm): this import is required to work-around template loading in listSimulations, see #1151
 if any(
     k in sirepo.feature_config.cfg().sim_types
-    for k in ("flash", "radia", "synergia", "silas", "warppba", "warpvnd")
+    for k in ("flash", "radia", "silas", "warppba", "warpvnd")
 ):
     import h5py
-
-#: If google_tag_manager_id set, string to insert in landing pages for google analytics
-_google_tag_manager = None
-
-#: what to match in landing pages to insert `_google_tag_manager`
-_google_tag_manager_re = re.compile("(?=</head>)", flags=re.IGNORECASE)
 
 _ROBOTS_TXT = None
 
@@ -180,6 +175,15 @@ class API(sirepo.quest.API):
         )
 
     @sirepo.quest.Spec("allow_visitor")
+    async def api_faviconPng(self):
+        """Routes to favicon.png file."""
+        # SECURITY: We control the path of the file so using send_file is ok.
+        return self.reply_file(
+            sirepo.resource.static("img", "favicon.png"),
+            content_type="image/png",
+        )
+
+    @sirepo.quest.Spec("allow_visitor")
     async def api_forbidden(self):
         raise sirepo.util.Forbidden("app forced forbidden")
 
@@ -289,7 +293,7 @@ class API(sirepo.quest.API):
             req.form_file = f
             req.import_file_arguments = self.sreq.form_get("arguments", "")
 
-            def s(data):
+            def _save_sim(data):
                 data.models.simulation.folder = req.folder
                 data.models.simulation.isExample = False
                 return self._save_new_and_reply(req, data)
@@ -313,12 +317,14 @@ class API(sirepo.quest.API):
                     data = await req.template.import_file(
                         req,
                         tmp_dir=d,
-                        reply_op=s,
                         qcall=self,
+                        # SRW needs a simulation created to be able to start
+                        # a background import.
+                        srw_save_sim=_save_sim,
                     )
                 if "error" in data:
                     return self.reply_json(data)
-            return s(data)
+            return _save_sim(data)
         except sirepo.util.ReplyExc:
             raise
         except Exception as e:
@@ -500,7 +506,7 @@ class API(sirepo.quest.API):
 
         self._proxy_react(path_info)
         if path_info is None:
-            return self.reply_redirect(cfg.home_page_uri)
+            return self.reply_redirect(_cfg.home_page_uri)
         if template.is_sim_type(path_info):
             return self._render_root_page("index", PKDict(app_name=path_info))
         u = sirepo.uri.unchecked_root_redirect(path_info)
@@ -511,13 +517,11 @@ class API(sirepo.quest.API):
     @sirepo.quest.Spec("require_user", sid="SimId", data="SimData all_input")
     async def api_saveSimulationData(self):
         # do not fixup_old_data yet
-        req = self.parse_post(id=True, template=True)
-        d = req.req_data
-        simulation_db.validate_serial(d, qcall=self)
+        req = self.parse_post(id=True, template=True, is_sim_data=True)
         return self._simulation_data_reply(
             req,
             simulation_db.save_simulation_json(
-                d, fixup=True, modified=True, qcall=self
+                req.req_data, fixup=True, modified=True, qcall=self
             ),
         )
 
@@ -612,18 +616,8 @@ class API(sirepo.quest.API):
         """
         if not path_info:
             raise sirepo.util.NotFound("empty path info")
-        self._proxy_react("static/" + path_info)
+        self._proxy_react(f"{sirepo.const.STATIC_D}/" + path_info)
         p = sirepo.resource.static(sirepo.util.validate_path(path_info))
-        if _google_tag_manager and re.match(r"^en/[^/]+html$", path_info):
-            return self.headers_for_cache(
-                self.reply(
-                    content=_google_tag_manager_re.sub(
-                        _google_tag_manager,
-                        pkio.read_text(p),
-                    ),
-                ),
-                path=p,
-            )
         if re.match(r"^(html|en)/[^/]+html$", path_info):
             return self.reply_html(p)
         return self.reply_file(p)
@@ -646,20 +640,21 @@ class API(sirepo.quest.API):
                 "new folder is root req={}",
                 req,
             )
-        for r in simulation_db.iterate_simulation_datafiles(
-            req.type,
-            _simulation_data_iterator,
-            qcall=self,
-        ):
-            f = r.models.simulation.folder
-            l = o.lower()
-            if f.lower() == o.lower():
-                r.models.simulation.folder = n
-            elif f.lower().startswith(o.lower() + "/"):
-                r.models.simulation.folder = n + f[len() :]
-            else:
-                continue
-            simulation_db.save_simulation_json(r, fixup=False, qcall=self)
+        with simulation_db.user_lock(qcall=self):
+            for r in simulation_db.iterate_simulation_datafiles(
+                req.type,
+                _simulation_data_iterator,
+                qcall=self,
+            ):
+                f = r.models.simulation.folder
+                l = o.lower()
+                if f.lower() == o.lower():
+                    r.models.simulation.folder = n
+                elif f.lower().startswith(o.lower() + "/"):
+                    r.models.simulation.folder = n + f[len() :]
+                else:
+                    continue
+                simulation_db.save_simulation_json(r, fixup=False, qcall=self)
         return self.reply_ok()
 
     @sirepo.quest.Spec(
@@ -718,17 +713,22 @@ class API(sirepo.quest.API):
 
         def _build():
             p = path
-            if re.search(r"^\w+$", p):
+            m = re.search(r"^(\w+)(?:$|/)", p)
+            if m and m.group(1) in sirepo.feature_config.cfg().sim_types:
                 p = "index.html"
-            # do not call api_staticFile due to recursion of proxy_react
-            raise sirepo.util.SReplyExc(
-                self.reply_file(
-                    sirepo.resource.static(sirepo.util.validate_path(f"react/{p}")),
-                ),
+            # do not call api_staticFile due to recursion of proxy_react()
+            r = self.reply_file(
+                sirepo.resource.static(sirepo.util.validate_path(f"react/{p}")),
             )
+            if p == "index.html":
+                # Ensures latest react is always returned, because index.html contains
+                # version-tagged values but index.html does not. It's likely that
+                # a check would be made on a refresh, this ensures no caching.
+                r.headers_for_no_cache()
+            raise sirepo.util.SReplyExc(r)
 
         def _dev():
-            r = requests.get(cfg.react_server + path)
+            r = requests.get(_cfg.react_server + path)
             # We want to throw an exception here, because it shouldn't happen
             r.raise_for_status()
             raise sirepo.util.SReplyExc(
@@ -738,10 +738,12 @@ class API(sirepo.quest.API):
                 ),
             )
 
-        if not path or not cfg.react_server:
-            return
-        if path in _PROXY_REACT_URI_SET or _PROXY_REACT_URI_RE.search(path):
-            _build() if cfg.react_server == _REACT_SERVER_BUILD else _dev()
+        if (
+            path
+            and _cfg.react_server
+            and (path in _PROXY_REACT_URI_SET or _PROXY_REACT_URI_RE.search(path))
+        ):
+            _build() if _cfg.react_server == _REACT_SERVER_BUILD else _dev()
 
     def _render_root_page(self, page, values):
         values.update(
@@ -762,6 +764,8 @@ class API(sirepo.quest.API):
     def _simulation_data_reply(self, req, data):
         if hasattr(req.template, "prepare_for_client"):
             d = req.template.prepare_for_client(data, qcall=self)
+        if sirepo.feature_config.is_react_sim_type(req.type):
+            req.sim_data.react_format_data(data)
         return self.headers_for_no_cache(self.reply_json(data))
 
 
@@ -796,16 +800,10 @@ def init_app(uwsgi=None, use_reloader=False, is_server=False):
     sirepo.modules.import_and_init("sirepo.uri_router").init_for_flask(_app)
     sirepo.flask.app_set(_app)
     if is_server:
-        global _google_tag_manager
         from sirepo import auth_db
 
         with sirepo.quest.start() as qcall:
             qcall.auth_db.create_or_upgrade()
-
-        if cfg.google_tag_manager_id:
-            _google_tag_manager = f"""<script>
-        (function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{'gtm.start':new Date().getTime(),event:'gtm.js'}});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);}})(window,document,'script','dataLayer','{cfg.google_tag_manager_id}');
-        </script>"""
 
         # Avoid unnecessary logging
         sirepo.flask.is_server = True
@@ -819,8 +817,8 @@ def init_module(**imports):
 def _cfg_react_server(value):
     if value is None:
         return None
-    if not pkconfig.channel_in("dev"):
-        pkconfig.raise_error("invalid channel={}; must be dev", pkconfig.cfg.channel)
+    # if not pkconfig.channel_in("dev"):
+    #     pkconfig.raise_error("invalid channel={}; must be dev", pkconfig.cfg.channel)
     if value == _REACT_SERVER_BUILD:
         return value
     u = urllib.parse.urlparse(value)
@@ -835,21 +833,21 @@ def _cfg_react_server(value):
 
 
 def _init_proxy_react():
-    if not cfg.react_server:
+    if not _cfg.react_server:
         return
     global _PROXY_REACT_URI_RE, _PROXY_REACT_URI_SET
     p = [
         "asset-manifest.json",
         "manifest.json",
-        "static/js/bundle.js",
-        "static/js/bundle.js.map",
+        f"{sirepo.const.STATIC_D}/js/bundle.js",
+        f"{sirepo.const.STATIC_D}/js/bundle.js.map",
     ]
     _PROXY_REACT_URI_SET = set(p)
-    r = "^react/"
+    r = f"^{sirepo.const.REACT_ROOT_D}/"
     for x in sirepo.feature_config.cfg().react_sim_types:
         r += rf"|^{x}(?:\/|$)"
-    if cfg.react_server == _REACT_SERVER_BUILD:
-        r += r"|^static/(css|js)/main\."
+    if _cfg.react_server == _REACT_SERVER_BUILD:
+        r += f"|^{sirepo.const.REACT_BUNDLE_FILE_PAT}"
     _PROXY_REACT_URI_RE = re.compile(r)
 
 
@@ -888,20 +886,23 @@ def _simulations_using_file(req, ignore_sim_id=None):
 
 
 def _source_cache_key():
-    if cfg.enable_source_cache_key:
+    if _cfg.enable_source_cache_key:
         return "?{}".format(simulation_db.app_version())
     return ""
 
 
-cfg = pkconfig.init(
+_cfg = pkconfig.init(
     db_dir=pkconfig.ReplacedBy("sirepo.srdb.root"),
     enable_source_cache_key=(
         True,
         bool,
         "enable source cache key, disable to allow local file edits in Chrome",
     ),
-    google_tag_manager_id=(None, str, "enable google analytics with this id"),
     home_page_uri=("/en/landing.html", str, "home page to redirect to"),
-    react_server=(None, _cfg_react_server, "Base URL of npm start server"),
+    react_server=(
+        None if pkconfig.in_dev_mode() else _REACT_SERVER_BUILD,
+        _cfg_react_server,
+        "Base URL of npm start server",
+    ),
     react_sim_types=pkconfig.ReplacedBy("sirepo.feature_config.react_sim_types"),
 )

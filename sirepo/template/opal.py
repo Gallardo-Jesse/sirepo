@@ -113,7 +113,7 @@ class OpalElementIterator(lattice.ElementIterator):
         super().end(model)
 
     def is_ignore_field(self, field):
-        return field == "name"
+        return field == "name" or field == self.IS_DISABLED_FIELD
 
 
 class OpalOutputFileIterator(lattice.ModelIterator):
@@ -125,6 +125,8 @@ class OpalOutputFileIterator(lattice.ModelIterator):
         self.preserve_output_filenames = preserve_output_filenames
 
     def field(self, model, field_schema, field):
+        if field == lattice.ElementIterator.IS_DISABLED_FIELD or field == "_super":
+            return
         self.field_index += 1
         # for now only interested in element outfn output files
         if field == "outfn" and field_schema[1] == "OutputFile":
@@ -430,6 +432,29 @@ def background_percent_complete(report, run_dir, is_running):
     return res
 
 
+def bunch_plot(model, run_dir, frame_index, filename=_OPAL_H5_FILE):
+    def _points(file, frame_index, name):
+        return np.array(file["/Step#{}/{}".format(frame_index, name)])
+
+    def _title(file, frame_index):
+        t = "Step {}".format(frame_index)
+        if "SPOS" in file["/Step#{}".format(frame_index)].attrs:
+            t += ", SPOS {0:.5f}m".format(
+                file["/Step#{}".format(frame_index)].attrs["SPOS"][0]
+            )
+        return t
+
+    return hdf5_util.HDF5Util(str(run_dir.join(filename))).heatmap(
+        PKDict(
+            format_plot=_units_from_hdf5,
+            frame_index=frame_index,
+            model=model,
+            points=_points,
+            title=_title,
+        )
+    )
+
+
 def code_var(variables):
     class _P(code_variable.PurePythonEval):
         # TODO(pjm): parse from opal files into schema
@@ -453,16 +478,21 @@ def code_var(variables):
 
 
 def get_data_file(run_dir, model, frame, options):
-    if frame < 0:
-        return template_common.text_data_file(OPAL_OUTPUT_FILE, run_dir)
     if model in ("bunchAnimation", "plotAnimation") or "bunchReport" in model:
         return _OPAL_H5_FILE
+    if frame < 0:
+        return template_common.text_data_file(OPAL_OUTPUT_FILE, run_dir)
     if model == "plot2Animation":
         return _OPAL_SDDS_FILE
     if model == "beamline3dAnimation":
         return _OPAL_VTK_FILE
     if "elementAnimation" in model:
-        return _file_name_for_element_animation(run_dir, model)
+        return _file_name_for_element_animation(
+            PKDict(
+                run_dir=run_dir,
+                frameReport=model,
+            )
+        )
     raise AssertionError("unknown model={}".format(model))
 
 
@@ -495,12 +525,30 @@ def new_simulation(data, new_simulation_data, qcall, **kwargs):
     data.models.simulation.elementPosition = new_simulation_data.elementPosition
 
 
+def parse_opal_log(run_dir):
+    res = ""
+    p = run_dir.join((OPAL_OUTPUT_FILE))
+    if not p.exists():
+        return res
+    with pkio.open_text(p) as f:
+        visited = set()
+        for line in f:
+            if re.search(r"^Error.*?>\s*\w", line):
+                line = re.sub(r"Error.*?>\s*", "", line.rstrip()).rstrip()
+                if re.search(r"1DPROFILE1-DEFAULT", line):
+                    continue
+                if line and line not in visited:
+                    res += line + "\n"
+                    visited.add(line)
+    if res:
+        return res
+    return "An unknown error occurred"
+
+
 def post_execution_processing(success_exit, is_parallel, run_dir, **kwargs):
     if success_exit:
         return None
-    if is_parallel:
-        return _parse_opal_log(run_dir)
-    return _parse_opal_log(run_dir)
+    return parse_opal_log(run_dir)
 
 
 def prepare_for_client(data, qcall, **kwargs):
@@ -531,7 +579,7 @@ def save_sequential_report_data(data, run_dir):
     report = data.models[data.report]
     res = None
     if "bunchReport" in data.report:
-        res = _bunch_plot(report, run_dir, 0)
+        res = bunch_plot(report, run_dir, 0)
         res.title = ""
     else:
         raise AssertionError("unknown report: {}".format(report))
@@ -543,7 +591,7 @@ def save_sequential_report_data(data, run_dir):
 
 def sim_frame(frame_args):
     # elementAnimations
-    return _bunch_plot(
+    return bunch_plot(
         frame_args,
         frame_args.run_dir,
         frame_args.frameIndex,
@@ -588,7 +636,7 @@ def sim_frame_beamline3dAnimation(frame_args):
 def sim_frame_bunchAnimation(frame_args):
     a = frame_args.sim_in.models.bunchAnimation
     a.update(frame_args)
-    return _bunch_plot(a, a.run_dir, a.frameIndex)
+    return bunch_plot(a, a.run_dir, a.frameIndex)
 
 
 def sim_frame_plotAnimation(frame_args):
@@ -670,7 +718,6 @@ class _Generate(sirepo.lib.GenerateBase):
         # for emitted distributions
         distribution.nbin = 0
         distribution.emissionsteps = 1
-        distribution.offsetz = 0
         self.data.models.commands = [
             LatticeUtil.find_first_command(self.data, "option"),
             beam,
@@ -833,29 +880,6 @@ def _compute_3d_bounds(run_dir):
 
 def _generate_parameters_file(data, qcall=None):
     return _Generate(data, qcall=qcall).sim()
-
-
-def _bunch_plot(model, run_dir, frame_index, filename=_OPAL_H5_FILE):
-    def _points(file, frame_index, name):
-        return np.array(file["/Step#{}/{}".format(frame_index, name)])
-
-    def _title(file, frame_index):
-        t = "Step {}".format(frame_index)
-        if "SPOS" in file["/Step#{}".format(frame_index)].attrs:
-            t += ", SPOS {0:.5f}m".format(
-                file["/Step#{}".format(frame_index)].attrs["SPOS"][0]
-            )
-        return t
-
-    return hdf5_util.HDF5Util(str(run_dir.join(filename))).heatmap(
-        PKDict(
-            format_plot=_units_from_hdf5,
-            frame_index=frame_index,
-            model=model,
-            points=_points,
-            title=_title,
-        )
-    )
 
 
 def _compute_range_across_frames(run_dir, **kwargs):
@@ -1066,26 +1090,6 @@ def _output_info(run_dir):
                 )
             )
     return res
-
-
-def _parse_opal_log(run_dir):
-    res = ""
-    p = run_dir.join((OPAL_OUTPUT_FILE))
-    if not p.exists():
-        return res
-    with pkio.open_text(p) as f:
-        prev_line = ""
-        for line in f:
-            if re.search(r"^Error.*?>", line):
-                line = re.sub(r"^Error.*?>\s*\**\s*", "", line.rstrip())
-                if re.search(r"1DPROFILE1-DEFAULT", line):
-                    continue
-                if line and line != prev_line:
-                    res += line + "\n"
-                prev_line = line
-    if res:
-        return res
-    return "An unknown error occurred"
 
 
 def _read_data_file(path):

@@ -53,9 +53,7 @@ class SimData(sirepo.sim_data.SimDataBase):
         sim = models.simulation
         if not sim.get("exampleName"):
             sim.exampleName = sim.name
-        if sim.name in cls.schema().constants.rawExamples:
-            sim.appMode = "imported"
-        if sim.name == "Dipole":
+        if sim.name in ("Parameterized C-Bend Dipole",):
             sim.beamAxis = "x"
             sim.heightAxis = "z"
             sim.widthAxis = "y"
@@ -128,6 +126,16 @@ class SimData(sirepo.sim_data.SimDataBase):
             ]:
                 model[f] = "0"
 
+        def _fixup_field_paths(paths):
+            for p in paths:
+                if not p.type.endswith("Path"):
+                    p.type = f"{p.type}Path"
+                for f in (
+                    "begin",
+                    "end",
+                ):
+                    _fixup_number_string_field(p, f)
+
         def _fixup_number_string_field(model, field, to_type=float):
             if field not in model:
                 return
@@ -180,8 +188,6 @@ class SimData(sirepo.sim_data.SimDataBase):
                     for d in ("heightDir", "widthDir"):
                         if d in m:
                             del m[d]
-                if not o.get("segments"):
-                    o.segments = o.get("division", [1, 1, 1])
                 for f in (
                     "type",
                     "model",
@@ -195,19 +201,32 @@ class SimData(sirepo.sim_data.SimDataBase):
                     "size",
                 ):
                     _fixup_number_string_field(o, f)
+                _fixup_segmentation(o)
                 _fixup_terminations(o)
                 _fixup_transforms(o)
                 _delete_old_fields(o)
 
-        def _fixup_field_paths(paths):
-            for p in paths:
-                if not p.type.endswith("Path"):
-                    p.type = f"{p.type}Path"
-                for f in (
-                    "begin",
-                    "end",
-                ):
-                    _fixup_number_string_field(p, f)
+        def _fixup_segmentation(model):
+            if not model.get("segments"):
+                model.segments = model.get("division", [1, 1, 1])
+            if not model.get("segmentation"):
+                if model.get("type") == "cylinder":
+                    model.segmentation = "cyl"
+                    model.segmentationCylAxis = model.extrusionAxis
+                    model.segmentationCylPoint = model.center
+                    model.segmentationCylRadius = model.radius
+                else:
+                    model.segmentation = "pln"
+            if not model.get("segmentationCylAxis"):
+                model.segmentationCylAxis = "z"
+            if not model.get("segmentationCylPoint"):
+                model.segmentationCylPoint = [0, 0, 0]
+            if not model.get("segmentationCylRadius"):
+                model.segmentationCylRadius = 5.0
+            if not model.get("segmentationCylRatio"):
+                model.segmentationCylRatio = 1.0
+            if not model.get("segmentationCylUseObjectCenter"):
+                model.segmentationCylUseObjectCenter = "0"
 
         def _fixup_terminations(model):
             for t in filter(
@@ -245,6 +264,7 @@ class SimData(sirepo.sim_data.SimDataBase):
             del dm.fieldPaths["path"]
         if dm.simulation.get("isExample"):
             cls._fixup_examples(dm)
+        dm.simulation.areObjectsUnlockable = dm.simulation.magnetType == "freehand"
         if dm.simulation.magnetType == "undulator":
             cls._fixup_undulator(dm)
         cls._fixup_obj_types(dm)
@@ -330,6 +350,11 @@ class SimData(sirepo.sim_data.SimDataBase):
                     "extrudedPoints", "pointsFile", o.pointsFile
                 )
             )
+        for o in filter(
+            lambda x: x.get("type") == "stl" and "file" in x,
+            data.models.geometryReport.objects,
+        ):
+            res.append(cls.lib_file_name_with_model_field("stl", "file", o.file))
 
         return res
 

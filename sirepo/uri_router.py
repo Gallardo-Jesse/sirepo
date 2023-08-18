@@ -178,7 +178,7 @@ def register_api_module(module):
     if not hasattr(m, "API"):
         if pkinspect.module_functions("api_", module=m):
             raise AssertionError(f"module={m.__name__} has old interface")
-        if pkconfig.channel_in("dev"):
+        if pkconfig.in_dev_mode():
             pkdlog(f"api_module={m.__name__} does not have API class (no apis)")
         # some modules (ex: sirepo.auth.basic) don't have any APIs
         return
@@ -191,7 +191,7 @@ def register_api_module(module):
             _api_funcs[n] = _Route(func=o, cls=c, func_name=n)
 
 
-def start_tornado(ip, port, debug=False):
+def start_tornado(ip, port, debug):
     """Start tornado server, does not return"""
     from tornado import httpserver, ioloop, web, log
 
@@ -222,7 +222,7 @@ def start_tornado(ip, port, debug=False):
     s = httpserver.HTTPServer(
         web.Application(
             [("/.*", _Handler)],
-            debug=pkconfig.channel_in("dev"),
+            debug=debug,
         ),
         xheaders=True,
         max_buffer_size=sirepo.job.cfg().max_message_bytes,
@@ -331,7 +331,7 @@ async def _call_api(parent, route, kwargs, data=None, internal_req=None, reply_o
             res.quest_no_destroy = True
             return res
         sirepo.events.emit(qcall, "end_api_call", PKDict(resp=r))
-        if pkconfig.channel_in("dev"):
+        if pkconfig.in_dev_mode():
             r.header_set("Access-Control-Allow-Origin", "*")
         return reply_op(r)
     except:

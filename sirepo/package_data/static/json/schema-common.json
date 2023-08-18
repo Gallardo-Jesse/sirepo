@@ -4,6 +4,10 @@
             "longName": "MyApp",
             "shortName": "MyApp"
         },
+        "epicsllrf": {
+            "longName": "Epicsllrf",
+            "shortName": "Epicsllrf"
+        },
         "activait": {
             "longName": "Activait",
             "shortName": "Activait"
@@ -40,6 +44,10 @@
             "longName": "MAD-X",
             "shortName": "MAD-X"
         },
+        "omega": {
+            "longName": "OMEGA",
+            "shortName": "OMEGA"
+        },
         "opal": {
             "longName": "OPAL",
             "shortName": "OPAL"
@@ -52,9 +60,9 @@
             "longName": "Raydata",
             "shortName": "Raydata"
         },
-        "rshellweg": {
-            "longName": "RSHellweg",
-            "shortName": "RSHellweg"
+        "hellweg": {
+            "longName": "Hellweg",
+            "shortName": "Hellweg"
         },
         "shadow": {
             "longName": "SHADOW",
@@ -67,10 +75,6 @@
         "srw": {
             "longName": "Synchrotron Radiation Workshop",
             "shortName": "SRW"
-        },
-        "synergia": {
-            "longName": "Synergia",
-            "shortName": "Synergia"
         },
         "warppba": {
             "longName": "Warp PBA",
@@ -120,6 +124,7 @@
         "beginSession": "/begin-session",
         "blueskyAuth": "/bluesky-auth",
         "checkAuthJupyterhub": "/check-auth-jupyterhub",
+        "contentTooLarge": "/content-too-large",
         "copyNonSessionSimulation": "/copy-non-session-simulation",
         "copySimulation": "/copy-simulation",
         "deleteFile": "/delete-file",
@@ -131,6 +136,7 @@
         "exportJupyterNotebook": "/export-jupyter-notebook/<simulation_type>/<simulation_id>/?<model>/?<title>",
         "exportJupyterNotebook2": "/export-jupyter-notebook2/<simulation_type>",
         "favicon": "/favicon.ico",
+        "faviconPng": "/favicon.png",
         "findByName": "/find-by-name/<simulation_type>/<application_mode>/<simulation_name>",
         "findByNameWithAuth": "/find-by-name-auth/<simulation_type>/<application_mode>/<simulation_name>",
         "forbidden": "/forbidden",
@@ -194,6 +200,8 @@
         },
         "constants": {
             "canDownloadInputFile": true,
+            "canExportArchive": true,
+            "canShowDocumentationUrl": true,
             "clientCookie": "sirepo_cookie_js",
             "hasJupyterExport": false,
             "hasMadxExport": false,
@@ -312,20 +320,6 @@
                 ["fit", "Fit Data"],
                 ["fixed", "Fixed"]
             ]
-        },
-        "reactRoutes": {
-            "completeRegistration": {
-                "route": "/complete-registration"
-            },
-            "login": {
-                "route": "/login"
-            },
-            "loginWithEmailConfirm": {
-                "route": "/login-confirm/email/:token/:needCompleteRegistration"
-            },
-            "source": {
-                "route": "/:simulationId"
-            }
         },
         "localRoutes": {
             "admJobs": {
@@ -489,12 +483,14 @@
                 "js": [
                     "angular.min.js",
                     "jquery-2.2.4.min.js",
+                    "jquery-ui.min.js",
                     "cookieconsent.min.js"
                 ],
                 "css": [
                     "bootstrap-3.3.7.min.css",
                     "bootstrap-colxl.css",
                     "bootstrap-toggle.min.css",
+                    "jquery-ui.min.css",
                     "katex.min.css",
                     "cookieconsent.min.css"
                 ]
@@ -549,6 +545,11 @@
             "url": "not-found.html",
             "msg": "File Not Found",
             "route": "notFound"
+        },
+        "413": {
+            "url": "content-too-large.html",
+            "msg": "Content Too Large",
+            "route": "contentTooLarge"
         },
         "422": {
             "url": "srw-magnet-file-error.html",

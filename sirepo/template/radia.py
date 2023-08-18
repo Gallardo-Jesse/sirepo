@@ -17,7 +17,6 @@ from pykern.pkcollections import PKDict
 from pykern.pkdebug import pkdc, pkdp, pkdlog
 from scipy.spatial.transform import Rotation
 from sirepo import simulation_db
-from sirepo.template import radia_examples
 from sirepo.template import radia_util
 from sirepo.template import template_common
 import copy
@@ -85,6 +84,7 @@ _KICK_MAP_COLS = ["x", "y", "xpFactor", "ypFactor"]
 _KICK_MAP_UNITS = ["m", "m", "(T*m)$a2$n", "(T*m)$a2$n"]
 _GEOM_DIR = "geometryReport"
 _GEOM_FILE = "geometryReport.h5"
+_HEADER_FILE = "header.py"
 _KICK_FILE = "kickMap.h5"
 _KICK_SDDS_FILE = "kickMap.sdds"
 _KICK_TEXT_FILE = "kickMap.txt"
@@ -233,7 +233,6 @@ def get_data_file(run_dir, model, frame, options):
     sim = data.models.simulation
     name = sim.name
     sim_id = sim.simulationId
-    beam_axis = _rotate_axis(to_axis="z", from_axis=sim.beamAxis)
     rpt = data.models[model]
     sfx = options.suffix or SCHEMA.constants.dataDownloads._default[0].suffix
     f = f"{model}.{sfx}"
@@ -253,6 +252,7 @@ def get_data_file(run_dir, model, frame, options):
         )
         return f
     if model == "fieldLineoutAnimation":
+        beam_axis = _rotate_axis(to_axis="z", from_axis=sim.beamAxis)
         f_type = rpt.fieldType
         fd = generate_field_data(sim_id, get_g_id(), name, f_type, [rpt.fieldPath])
         v = fd.data[0].vectors
@@ -262,7 +262,6 @@ def get_data_file(run_dir, model, frame, options):
             return _save_field_csv(f_type, v, beam_axis, f)
         if sfx == "zip":
             return _save_field_srw(
-                f_type,
                 data.models[data.models.simulation.undulatorType].gap,
                 v,
                 beam_axis,
@@ -342,22 +341,36 @@ def stateless_compute_stl_size(data, **kwargs):
     f = _SIM_DATA.lib_file_abspath(
         _SIM_DATA.lib_file_name_with_type(data.args.file, SCHEMA.constants.fileTypeSTL)
     )
-    return PKDict(size=_create_stl_trimesh(f).bounding_box.primitive.extents.tolist())
+    m = _create_stl_trimesh(f)
+    return PKDict(
+        center=(m.bounding_box.bounds[0] + 0.5 * m.bounding_box.extents).tolist(),
+        size=m.bounding_box.primitive.extents.tolist(),
+    )
 
 
 def python_source_for_model(data, model, qcall, **kwargs):
     return _generate_parameters_file(data, False, for_export=True, qcall=qcall)
 
 
+def save_field_srw(gap, vectors, beam_axis, filename):
+    return _save_field_srw(
+        gap,
+        vectors,
+        _rotate_axis(to_axis="z", from_axis=beam_axis),
+        pkio.py_path(filename),
+    )
+
+
 def validate_file(file_type, path):
-    if path.ext not in (".csv", ".dat", ".stl", ".txt"):
+    p = path.ext.lower()
+    if p not in (".csv", ".dat", ".stl", ".txt"):
         return f"invalid file type: {path.ext}"
     if file_type == "extrudedPoints-pointsFile":
         try:
             _ = sirepo.csv.read_as_number_list(path)
         except RuntimeError as e:
             return e
-    if path.ext == ".stl":
+    if p == ".stl":
         mesh = _create_stl_trimesh(path)
         if trimesh.convex.is_convex(mesh) == False:
             return f"not convex model: {path.basename}"
@@ -848,10 +861,12 @@ def _generate_parameters_file(data, is_parallel, qcall, for_export=False, run_di
     rpt_out = f"{_REPORT_RES_MAP.get(report, report)}"
     res, v = template_common.generate_parameters_file(data)
     if report == "fieldLineoutAnimation":
-        v.sim_id = data.models.simulation.simulationId
-        v.name = data.models.simulation.name
+        v.beam_axis = data.models.simulation.beamAxis
         v.f_type = data.models.fieldLineoutAnimation.fieldType
         v.f_path = data.models.fieldLineoutAnimation.fieldPath
+        v.gap = data.models[data.models.simulation.undulatorType].gap
+        v.name = data.models.simulation.name
+        v.sim_id = data.models.simulation.simulationId
         return template_common.render_jinja(
             SIM_TYPE,
             v,
@@ -899,12 +914,7 @@ def _generate_parameters_file(data, is_parallel, qcall, for_export=False, run_di
                 f"{SCHEMA.constants.fileTypeRadiaDmp}.{data.models.simulation.dmpImportFile}"
             )
         )
-    v.isExample = (
-        data.models.simulation.get("isExample", False)
-        and data.models.simulation.name in radia_examples.EXAMPLES
-    )
-    v.exampleName = data.models.simulation.get("exampleName", None)
-    v.is_raw = v.exampleName in SCHEMA.constants.rawExamples
+    v.isExample = data.models.simulation.get("isExample", False)
     v.magnetType = data.models.simulation.get("magnetType", "freehand")
     dirs = _geom_directions(
         data.models.simulation.beamAxis, data.models.simulation.heightAxis
@@ -912,17 +922,16 @@ def _generate_parameters_file(data, is_parallel, qcall, for_export=False, run_di
     v.matrix = _get_coord_matrix(dirs, data.models.simulation.coordinateSystem)
     st = f"{v.magnetType}Type"
     v[st] = data.models.simulation[st]
-    if not v.is_raw:
-        pkinspect.module_functions("_update_geom_from_")[
-            f"_update_geom_from_{v.magnetType}"
-        ](
-            g.objects,
-            data.models[v[st]],
-            height_dir=dirs.height_dir,
-            length_dir=dirs.length_dir,
-            width_dir=dirs.width_dir,
-            qcall=qcall,
-        )
+    pkinspect.module_functions("_update_geom_from_")[
+        f"_update_geom_from_{v.magnetType}"
+    ](
+        g.objects,
+        data.models[v[st]],
+        height_dir=dirs.height_dir,
+        length_dir=dirs.length_dir,
+        width_dir=dirs.width_dir,
+        qcall=qcall,
+    )
     v.objects = g.get("objects", [])
     _validate_objects(v.objects)
 
@@ -966,8 +975,19 @@ def _generate_parameters_file(data, is_parallel, qcall, for_export=False, run_di
     v.h5SolutionPath = _H5_PATH_SOLUTION
     v.h5IdMapPath = _H5_PATH_ID_MAP
 
+    h = (
+        template_common.render_jinja(
+            SIM_TYPE,
+            v,
+            _HEADER_FILE,
+            jinja_env=PKDict(loader=jinja2.PackageLoader("sirepo", "template")),
+        )
+        if for_export or rpt_out in _SIM_REPORTS
+        else ""
+    )
+
     j_file = RADIA_EXPORT_FILE if for_export else f"{rpt_out}.py"
-    return template_common.render_jinja(
+    return h + template_common.render_jinja(
         SIM_TYPE,
         v,
         j_file,
@@ -1012,7 +1032,6 @@ def _get_cee_points(o, stemmed_info):
             [p.ax2, sy2],
             [p.ax2, p.sy1],
             [p.sx1, p.sy1],
-            [p.ax1, p.ay1],
         ],
         stemmed_info.plane_ctr,
     )
@@ -1041,7 +1060,6 @@ def _get_ell_points(o, stemmed_info):
             [p.sx2, p.ay2],
             [p.sx2, p.sy1],
             [p.sx1, p.sy1],
-            [p.ax1, p.ay1],
         ],
         stemmed_info.plane_ctr,
     )
@@ -1098,7 +1116,6 @@ def _get_jay_points(o, stemmed_info):
             [p.sx2, p.ay2],
             [p.sx2, p.sy1],
             [p.sx1, p.sy1],
-            [p.ax1, p.ay1],
         ],
         stemmed_info.plane_ctr,
     )
@@ -1343,7 +1360,7 @@ def _save_field_csv(field_type, vectors, scipy_rotation, path):
 
 # zip file - data plus index.  This will likely be used to generate files for a range
 # of gaps later
-def _save_field_srw(field_type, gap, vectors, scipy_rotation, path):
+def _save_field_srw(gap, vectors, scipy_rotation, path):
     # no whitespace in filenames
     base_name = re.sub(r"\s", "_", path.purebasename)
     data_path = path.dirpath().join(f"{base_name}_{gap}.dat")
@@ -1710,7 +1727,7 @@ def _update_geom_obj(o, qcall=None, **kwargs):
         o.points = pkinspect.module_functions("_get_")[f"_get_{o.type}_points"](
             o, _get_stemmed_info(o)
         )
-    if "points" in o:
+    if o.get("points"):
         o.area = _poly_area(o.points)
     if o.type == "stl":
         mesh = _read_stl_file(o.file, qcall=qcall)
@@ -1720,6 +1737,9 @@ def _update_geom_obj(o, qcall=None, **kwargs):
             d.stlFaces.append(list(f))
         o.stlVertices = d.stlVertices
         o.stlFaces = d.stlFaces
+        o.stlBoundsCenter = list(
+            mesh.bounding_box.bounds[0] + 0.5 * mesh.bounding_box.extents
+        )
         o.size = list(mesh.bounding_box.primitive.extents)
         o.stlCentroid = mesh.centroid.tolist()
 

@@ -4,6 +4,7 @@
 :copyright: Copyright (c) 2018 RadiaSoft LLC.  All Rights Reserved.
 :license: http://www.apache.org/licenses/LICENSE-2.0.html
 """
+# NOTE: limit sirepo imports here
 from pykern import pkcompat
 from pykern import pkconfig
 from pykern.pkcollections import PKDict
@@ -19,21 +20,17 @@ import pykern.pkjson
 import re
 import random
 import six
-import threading
 import unicodedata
 import zipfile
 
 
-cfg = None
+_cfg = None
 
 #: Http auth header name
 AUTH_HEADER = "Authorization"
 
 #: http auth header scheme bearer
 AUTH_HEADER_SCHEME_BEARER = "Bearer"
-
-#: Lock for operations across Sirepo (server)
-THREAD_LOCK = threading.RLock()
 
 #: length of string returned by create_token
 TOKEN_SIZE = 16
@@ -127,6 +124,12 @@ class Redirect(OKReplyExc):
 
     def __init__(self, uri, *args, **kwargs):
         super().__init__(*args, sr_args=PKDict(uri=uri), **kwargs)
+
+
+class ContentTooLarge(ReplyExc):
+    """The content requested by the user was too large (ex large data file)"""
+
+    pass
 
 
 class ServerError(ReplyExc):
@@ -238,9 +241,9 @@ def assert_sim_type(sim_type):
 
 
 def create_token(value):
-    if pkconfig.channel_in_internal_test() and cfg.create_token_secret:
+    if pkconfig.channel_in_internal_test() and _cfg.create_token_secret:
         v = base64.b32encode(
-            hashlib.sha256(pkcompat.to_bytes(value + cfg.create_token_secret)).digest()
+            hashlib.sha256(pkcompat.to_bytes(value + _cfg.create_token_secret)).digest()
         )
         return pkcompat.from_bytes(v[:TOKEN_SIZE])
     return random_base62(TOKEN_SIZE)
@@ -253,8 +256,6 @@ def err(obj, fmt="", *args, **kwargs):
 def files_to_watch_for_reload(*extensions):
     from sirepo import feature_config
 
-    if not pkconfig.channel_in("dev"):
-        return []
     for e in extensions:
         for p in sorted(set(["sirepo", *feature_config.cfg().package_path])):
             d = pykern.pkio.py_path(
@@ -489,6 +490,6 @@ def write_zip(path):
     )
 
 
-cfg = pkconfig.init(
+_cfg = pkconfig.init(
     create_token_secret=("oh so secret!", str, "used for internal test only"),
 )

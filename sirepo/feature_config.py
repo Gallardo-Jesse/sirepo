@@ -13,7 +13,7 @@ _DEPENDENT_CODES = [
     ["jspec", "elegant"],
     ["controls", "madx"],
     ["omega", "elegant"],
-    ["omega", "madx"],
+    ["omega", "genesis"],
     ["omega", "opal"],
 ]
 
@@ -27,11 +27,12 @@ PROD_FOSS_CODES = frozenset(
         "genesis",
         "jspec",
         "madx",
+        "omega",
         "opal",
         "radia",
         "shadow",
+        "silas",
         "srw",
-        "synergia",
         "warppba",
         "warpvnd",
         "zgoubi",
@@ -41,10 +42,9 @@ PROD_FOSS_CODES = frozenset(
 #: Codes on dev, alpha, and beta
 _NON_PROD_FOSS_CODES = frozenset(
     (
+        "epicsllrf",
         "myapp",
-        "silas",
-        "omega",
-        "rshellweg",
+        "hellweg",
     )
 )
 
@@ -97,6 +97,10 @@ def for_sim_type(sim_type):
     )
 
 
+def is_react_sim_type(sim_type):
+    return sim_type in cfg().react_sim_types
+
+
 def proprietary_sim_types():
     """All sim types that have proprietary information and require granted access to use
 
@@ -125,12 +129,11 @@ def _init():
 
     global _cfg
 
-    def b(msg, dev=False):
-        return (
-            pkconfig.channel_in("dev") if dev else pkconfig.channel_in_internal_test(),
-            bool,
-            msg,
-        )
+    def _dev(msg):
+        return (pkconfig.in_dev_mode(), bool, msg)
+
+    def _test(msg):
+        return (pkconfig.channel_in_internal_test(), bool, msg)
 
     _cfg = pkconfig.init(
         # No secrets should be stored here (see sirepo.job.agent_env)
@@ -142,16 +145,16 @@ def _init():
                 "url base to reach cloudmc example h5m files",
             ),
         ),
+        debug_mode=(pkconfig.in_dev_mode(), bool, "control debugging output"),
         default_proprietary_sim_types=(
             frozenset(),
             set,
             "codes where all users are authorized by default but that authorization can be revoked",
         ),
-        schema_common=dict(
-            hide_guest_warning=b("Hide the guest warning in the UI", dev=True),
-        ),
         jspec=dict(
-            derbenevskrinsky_force_formula=b("Include Derbenev-Skrinsky force formula"),
+            derbenevskrinsky_force_formula=_test(
+                "Include Derbenev-Skrinsky force formula"
+            ),
         ),
         moderated_sim_types=(
             frozenset(),
@@ -163,15 +166,15 @@ def _init():
             tuple,
             "Names of root packages that should be checked for codes and resources. Order is important, the first package with a matching code/resource will be used. sirepo added automatically.",
         ),
-        proprietary_sim_types=(
-            frozenset(),
-            set,
-            "codes that contain proprietary information and authorization to use is granted manually",
-        ),
         proprietary_oauth_sim_types=(
             frozenset(),
             set,
             "codes that contain proprietary information and authorization to use is granted through oauth",
+        ),
+        proprietary_sim_types=(
+            frozenset(),
+            set,
+            "codes that contain proprietary information and authorization to use is granted manually",
         ),
         raydata=dict(
             scan_monitor_url=(
@@ -180,13 +183,15 @@ def _init():
                 "url to reach scan monitor daemon",
             ),
         ),
-        # TODO(pjm): myapp can't be in react_sim_types or unit tests fail
         react_sim_types=(
-            ("jspec", "genesis", "warppba", "omega", "myapp")
+            ("jspec", "genesis", "warppba", "myapp", "shadow", "madx")
             if pkconfig.channel_in("dev")
             else (),
             set,
             "React apps",
+        ),
+        schema_common=dict(
+            hide_guest_warning=_dev("Hide the guest warning in the UI"),
         ),
         sim_types=(set(), set, "simulation types (codes) to be imported"),
         slack_uri=(
@@ -196,18 +201,10 @@ def _init():
         ),
         srw=dict(
             app_url=("/en/xray-beamlines.html", str, "URL for SRW link"),
-            mask_in_toolbar=b("Show the mask element in toolbar"),
+            mask_in_toolbar=_test("Show the mask element in toolbar"),
             show_video_links=(False, bool, "Display instruction video links"),
-            show_open_shadow=(
-                pkconfig.channel_in_internal_test(),
-                bool,
-                'Show "Open as a New Shadow Simulation" menu item',
-            ),
-            show_rsopt_ml=(
-                pkconfig.channel_in_internal_test(),
-                bool,
-                'Show "Export ML Script" menu item',
-            ),
+            show_open_shadow=_test('Show "Open as a New Shadow Simulation" menu item'),
+            show_rsopt_ml=_test('Show "Export ML Script" menu item'),
         ),
         trust_sh_env=(
             False,
@@ -216,7 +213,7 @@ def _init():
         ),
         warpvnd=dict(
             allow_3d_mode=(True, bool, "Include 3D features in the Warp VND UI"),
-            display_test_boxes=b(
+            display_test_boxes=_dev(
                 "Display test boxes to visualize 3D -> 2D projections"
             ),
         ),

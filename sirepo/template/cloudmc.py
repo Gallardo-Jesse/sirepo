@@ -16,24 +16,56 @@ import sirepo.feature_config
 import sirepo.sim_data
 
 
-VOLUME_INFO_FILE = "volumes.json"
+_VOLUME_INFO_FILE = "volumes.json"
 _SIM_DATA, SIM_TYPE, SCHEMA = sirepo.sim_data.template_globals()
 
 
 def _percent_complete(run_dir, is_running):
+    RE_F = "\d*\.\d+"
+
+    def _get_groups(match, *args):
+        res = []
+        for i in args:
+            g = match.group(i)
+            if g is not None:
+                res.append(g.strip())
+        return res
+
     res = PKDict(
         frameCount=0,
         percentComplete=0,
     )
     with pkio.open_text(str(run_dir.join(template_common.RUN_LOG))) as f:
+        res.eigenvalue = None
+        res.results = None
+        has_results = False
         for line in f:
             m = re.match(r"^ Simulating batch (\d+)", line)
             if m:
                 res.frameCount = int(m.group(1))
                 continue
-            m = re.match(r"^\s+(\d+)/1\s+\d", line)
+            m = re.match(
+                rf"^\s+(\d+)/1\s+({RE_F})\s*({RE_F})?\s*(\+/-)?\s*({RE_F})?", line
+            )
             if m:
                 res.frameCount = int(m.group(1))
+                res.eigenvalue = res.eigenvalue or []
+                res.eigenvalue.append(
+                    PKDict(
+                        batch=res.frameCount,
+                        val=_get_groups(m, 2, 3, 5),
+                    )
+                )
+                continue
+            if not has_results:
+                has_results = re.match(r"\s*=+>\s+RESULTS\s+<=+\s*", line)
+                if not has_results:
+                    continue
+            m = re.match(rf"^\s+(.+)\s=\s({RE_F})\s+\+/-\s+({RE_F})", line)
+            if m:
+                res.results = res.results or []
+                res.results.append(_get_groups(m, 1, 2, 3))
+
     data = simulation_db.read_json(run_dir.join(template_common.INPUT_BASE_NAME))
     if is_running:
         res.percentComplete = res.frameCount * 100 / data.models.settings.batches
@@ -49,12 +81,12 @@ def background_percent_complete(report, run_dir, is_running):
                 percentComplete=0,
                 frameCount=0,
             )
-        if not run_dir.join(VOLUME_INFO_FILE).exists():
+        if not run_dir.join(_VOLUME_INFO_FILE).exists():
             raise AssertionError("Volume extraction failed")
         return PKDict(
             percentComplete=100,
             frameCount=1,
-            volumes=simulation_db.read_json(VOLUME_INFO_FILE),
+            volumes=simulation_db.read_json(_VOLUME_INFO_FILE),
         )
     return _percent_complete(run_dir, is_running)
 
@@ -166,6 +198,20 @@ def write_parameters(data, run_dir, is_parallel):
         run_dir.join(template_common.PARAMETERS_PYTHON_FILE),
         _generate_parameters_file(data, run_dir=run_dir),
     )
+    if is_parallel:
+        return template_common.get_exec_parameters_cmd()
+
+
+def _dagmc_animation_python(filename):
+    return f"""
+import sirepo.pkcli.cloudmc
+import sirepo.simulation_db
+
+sirepo.simulation_db.write_json(
+    "{_VOLUME_INFO_FILE}",
+    sirepo.pkcli.cloudmc.extract_dagmc("{filename}"),
+)
+"""
 
 
 def _generate_angle(angle):
@@ -193,8 +239,11 @@ def _generate_call(name, args):
 
 
 def _generate_distribution(dist):
+    import sirepo.csv
+
     if dist._type == "None":
         return dist._type
+    t = dist._type
     args = []
     if "probabilityValue" in dist:
         x = []
@@ -205,6 +254,17 @@ def _generate_distribution(dist):
             x.append(v.x)
             p.append(v.p)
         for v in (x, p):
+            args.append(_generate_array(v))
+    if "file" in dist:
+        for v in numpy.array(
+            sirepo.csv.read_as_number_list(
+                _SIM_DATA.lib_file_abspath(
+                    _SIM_DATA.lib_file_name_with_model_field(
+                        dist._type, "file", dist.file
+                    )
+                )
+            )
+        ).T.tolist():
             args.append(_generate_array(v))
     if dist._type == "discrete":
         pass
@@ -218,7 +278,9 @@ def _generate_distribution(dist):
         args += [str(v) for v in [dist.mean_value, dist.std_dev]]
     elif dist._type == "powerLaw":
         args += [str(v) for v in [dist.a, dist.b, dist.n]]
-    elif dist._type == "tabular":
+    elif dist._type in ("tabular", "tabularFromFile"):
+        if dist._type == "tabularFromFile":
+            t = "tabular"
         args += [
             f'"{dist.interpolation}"',
             "True" if dist.ignore_negative == "1" else "False",
@@ -227,7 +289,7 @@ def _generate_distribution(dist):
         args += [str(v) for v in [dist.a, dist.b]]
     else:
         raise AssertionError("unknown distribution type: {}".format(dist._type))
-    return _generate_call(dist._type, args)
+    return _generate_call(t, args)
 
 
 def _generate_materials(data):
@@ -283,7 +345,9 @@ def _generate_parameters_file(data, run_dir=None):
     report = data.get("report", "")
     for f in [b.basename for b in _SIM_DATA.sim_file_basenames(data)]:
         pkio.unchecked_remove(f)
-    if report in ("dagmcAnimation", "tallyReport"):
+    if report == "dagmcAnimation":
+        return _dagmc_animation_python(_SIM_DATA.dagmc_filename(data))
+    if report == "tallyReport":
         return ""
     res, v = template_common.generate_parameters_file(data)
     v.dagmcFilename = _SIM_DATA.dagmc_filename(data)
@@ -309,14 +373,16 @@ def _generate_range(filter):
 
 
 def _generate_source(source):
+    if source.get("type") == "file" and source.get("file"):
+        return f"openmc.Source(filename=\"{_SIM_DATA.lib_file_name_with_model_field('source', 'file', source.file)}\")"
     return f"""openmc.Source(
-    space={_generate_space(source.space)},
-    angle={_generate_angle(source.angle)},
-    energy={_generate_distribution(source.energy)},
-    time={_generate_distribution(source.time)},
-    strength={source.strength},
-    particle="{source.particle}",
-)"""
+        space={_generate_space(source.space)},
+        angle={_generate_angle(source.angle)},
+        energy={_generate_distribution(source.energy)},
+        time={_generate_distribution(source.time)},
+        strength={source.strength},
+        particle="{source.particle}",
+    )"""
 
 
 def _generate_sources(data):
