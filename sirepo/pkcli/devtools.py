@@ -12,6 +12,7 @@ _RENAMER_EXCLUDE_FILES = re.compile(
     f".*{pkunit.WORK_DIR_SUFFIX}/"
     + r"|.*(_console\.py)|^venv/"
     + r"|\/create_app"
+    + r"|devtools.py"
     + r"|^run/"
     + r"|__pycache__/ "
     + r"|\/js\/ext"
