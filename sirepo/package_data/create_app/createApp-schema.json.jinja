@@ -1,0 +1,25 @@
+{
+    "dynamicFiles": {
+        "sirepoLibs": {
+            "js": ["{{ app_name }}.js"]
+        }
+    },
+    "localRoutes": {
+        "source": {
+            "config": {
+                "controller": "{{ app_name }}SourceController as source",
+                "templateUrl": "/static/html/{{ app_name }}-source.html"
+            }
+        }
+    },
+    "model": {
+        "simulationStatus": {},
+        "{{ app_name }}Report": {}
+    },
+    "view": {
+        "simulationStatus": {
+            "title": "Simulation Status",
+            "advanced": []
+        }
+    }
+}

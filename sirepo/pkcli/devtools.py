@@ -27,9 +27,12 @@ def create_app(app_name):
     import sirepo.resource
 
     _RESOURCE_DIR = "create_app"
-    _TEMP_NAME = "createApp"
-    _STATIC_DIR = pkio.py_path("sirepo").join("package_data").join("static")
+    _PACKAGE_DATA = os.path.join(*("sirepo", "package_data"))
+    _STATIC_DIR = _PACKAGE_DATA.join("static")
     _STATIC_FILE_TYPES = ["html", "js", "json"]
+    _TEMP_NAME = "createApp"
+    _TEMPLATE_DIR = _PACKAGE_DATA.join("template")
+    _TEMPLATE_NAME = "parameters.py.jinja"
 
     for t in ["pkcli", "sim_data", "template"] + _STATIC_FILE_TYPES:
         p = [_RESOURCE_DIR]
@@ -50,15 +53,15 @@ def create_app(app_name):
             j2_ctx=PKDict(app_name=app_name),
         )
 
-    # 1) generate
+    pkio.write_text(
+        pkio.mkdir_parent(_TEMPLATE_DIR.join(app_name)).join(_TEMPLATE_NAME),
+        "print( '{{ test_message }}' )"
+    )
 
-    # 1 b) if .jinja.jinja doesn't work,
-    # cp sirepo/package_data/template/appName/parameters.py.jinja
-
-    # 2) rename
     # rename appName since render_jinja renders <fname>.jinja into <fname>
+    rename_app(_TEMP_NAME, app_name)
 
-    # 3) update
+    # update files
     # sirepo/feature_config.py update
     # sirepo/package_data/static/json/schema-common.json update
     # tests/pkcli/static_files_data/1.out/robots.txt
