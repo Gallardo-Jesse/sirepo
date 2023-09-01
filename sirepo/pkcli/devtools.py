@@ -11,6 +11,7 @@ from pykern.pkdebug import pkdp
 _RENAMER_EXCLUDE_FILES = re.compile(
     f".*{pkunit.WORK_DIR_SUFFIX}/"
     + r"|.*(_console\.py)|^venv/"
+    + r"|\/create_app"
     + r"|^run/"
     + r"|__pycache__/ "
     + r"|\/js\/ext"
@@ -27,7 +28,7 @@ def create_app(app_name):
     import sirepo.resource
 
     _RESOURCE_DIR = "create_app"
-    _PACKAGE_DATA = os.path.join(*("sirepo", "package_data"))
+    _PACKAGE_DATA = pkio.py_path("sirepo/package_data")
     _STATIC_DIR = _PACKAGE_DATA.join("static")
     _STATIC_FILE_TYPES = ["html", "js", "json"]
     _TEMP_NAME = "createApp"
