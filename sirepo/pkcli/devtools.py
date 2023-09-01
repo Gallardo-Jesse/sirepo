@@ -5,6 +5,7 @@ import subprocess
 from pykern import pkunit
 from pykern import pksetup
 from pykern import pkio
+from pykern.pkcollections import PKDict
 from pykern.pkdebug import pkdp
 
 _RENAMER_EXCLUDE_FILES = re.compile(
@@ -20,6 +21,47 @@ _RENAMER_EXCLUDE_FILES = re.compile(
 
 def rename_app(old_app_name, new_app_name):
     _Renamer(old_app_name, new_app_name).rename()
+
+
+def create_app(app_name):
+    import sirepo.resource
+
+    _RESOURCE_DIR = "create_app"
+    _TEMP_NAME = "createApp"
+    _STATIC_DIR = pkio.py_path("sirepo").join("package_data").join("static")
+    _STATIC_FILE_TYPES = ["html", "js", "json"]
+
+    for t in ["pkcli", "sim_data", "template"] + _STATIC_FILE_TYPES:
+        p = [_RESOURCE_DIR]
+        if t in _STATIC_FILE_TYPES:
+            f = PKDict(
+                html=_TEMP_NAME + "-source.html",
+                js=_TEMP_NAME + ".js",
+                json=_TEMP_NAME + "-schema.json",
+            )[t]
+            p += [f]
+            d = _STATIC_DIR
+        else:
+            p += [t, _TEMP_NAME + ".py"]
+            d = pkio.py_path("sirepo")
+        sirepo.resource.render_jinja(
+            *p,
+            target_dir=d.join(t),
+            j2_ctx=PKDict(app_name=app_name),
+        )
+
+    # 1) generate
+
+    # 1 b) if .jinja.jinja doesn't work,
+    # cp sirepo/package_data/template/appName/parameters.py.jinja
+
+    # 2) rename
+    # rename appName since render_jinja renders <fname>.jinja into <fname>
+
+    # 3) update
+    # sirepo/feature_config.py update
+    # sirepo/package_data/static/json/schema-common.json update
+    # tests/pkcli/static_files_data/1.out/robots.txt
 
 
 class _Renamer:

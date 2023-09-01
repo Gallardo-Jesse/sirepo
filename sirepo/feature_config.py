@@ -46,6 +46,7 @@ _NON_PROD_FOSS_CODES = frozenset(
         "myapp",
         "viz3d",
         "hellweg",
+        "create_app",
     )
 )
 
