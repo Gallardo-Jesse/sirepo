@@ -4,14 +4,21 @@
       border-top-left-radius: 6px;
       border-top-right-radius: 6px;
     }
+
     .navbar-nav .nav-tabs {
       border-bottom: 0;
     }
+
+    .panel-info > .panel-heading {
+      color: #555;
+    }
+
     @media (min-width: 768px) {
       .modal-lg {
         width: 100%;
       }
     }
+
     @media (min-width: 992px) {
       .modal-lg {
         width: 945px;
@@ -20,6 +27,7 @@
         float: right !important;
       }
     }
+
     @media(max-width: 480px) {
       div.navbar-brand {
         font-size: 12pt;
@@ -31,12 +39,14 @@
         margin-right: -15px;
       }
     }
+
     .tooltip-inner {
       max-width: 350px;
       background-color: #f9f9f9;
       color: black;
       border: 1px solid black;
     }
+
     .tooltip.in {
       opacity: 1;
     }
@@ -321,7 +331,7 @@
     }
 
     .sr-panel-heading {
-      font-weight: 300;
+      font-weight: 350;
       line-height: 1.4;
       font-size: 21px;
       margin-bottom: 0;
