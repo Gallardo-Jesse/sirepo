@@ -3,6 +3,17 @@
 var srlog = SIREPO.srlog;
 var srdbg = SIREPO.srdbg;
 
+SIREPO.app.config(() => {
+    SIREPO.appReportTypes = `
+        <div data-ng-switch-when="buttons" data-buttons-report="" class="sr-plot" data-model-name="{{ modelKey }}" data-report-id="reportId"></div>
+    `;
+});
+
+SIREPO.app.controller('MyAppGuiController', function (appState, panelState, $scope) {
+    var self = this;
+});
+
+
 SIREPO.app.controller('MyAppSourceController', function (appState, panelState, $scope) {
     var self = this;
 
@@ -45,7 +56,8 @@ SIREPO.app.directive('appHeader', function(appState, panelState) {
             <div data-app-header-right="nav">
               <app-header-right-sim-loaded>
                 <div data-sim-sections="">
-                  <li class="sim-section" data-ng-class="{active: nav.isActive(\'source\')}"><a href data-ng-click="nav.openSection(\'source\')"><span class="glyphicon glyphicon-flash"></span> Source</a></li>
+                  <li class="sim-section" data-ng-class="{active: nav.isActive('source')}"><a href data-ng-click="nav.openSection('source')"><span class="glyphicon glyphicon-flash"></span> Source</a></li>
+                  <li class="sim-section" data-ng-class="{active: nav.isActive('gui')}"><a href data-ng-click="nav.openSection('gui')"><span class="glyphicon glyphicon-education"></span> GUI Standards</a></li>
                 </div>
               </app-header-right-sim-loaded>
               <app-settings>
@@ -54,5 +66,32 @@ SIREPO.app.directive('appHeader', function(appState, panelState) {
               </app-header-right-sim-list>
             </div>
         `,
+    };
+});
+
+SIREPO.app.directive('buttonsReport', function() {
+    return {
+        restrict: 'A',
+        scope: {
+        },
+        template: `
+            <div class="row">
+                <div class="col col-md-6">
+                    <div style="padding: 8px 8px;"><label>Action Buttons</label></div>
+                    <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Move up"><span class="glyphicon glyphicon-arrow-up"></span></button></span>
+                    <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Move down"><span class="glyphicon glyphicon-arrow-down"></span></button></span>
+                    <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Copy"><span class="glyphicon glyphicon-duplicate"></span></button></span>
+                    <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Edit"><span class="glyphicon glyphicon-pencil"></span></button></span>
+                    <span style="padding: 8px 8px;"><button class="btn btn-danger btn-xs" title="Delete"><span class="glyphicon glyphicon-remove"></span></button></span>
+                </div>
+                <div class="col col-md-6">
+                    <div style="padding: 8px 8px;"><label>Dialog Buttons</label></div>
+                    <button class="btn btn-primary"">Save Changes</button>
+                    <button class="btn btn-default">Cancel</button>
+                </div>
+            </div>
+        `,
+        controller: function($scope) {
+        },
     };
 });

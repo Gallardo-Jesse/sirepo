@@ -17,13 +17,22 @@
     },
     "localRoutes": {
         "source": {
+            "route": "/source/:simulationId",
             "config": {
                 "controller": "MyAppSourceController as source",
                 "templateUrl": "/static/html/myapp-source.html"
             }
+        },
+        "gui": {
+            "route": "/gui/:simulationId",
+            "config": {
+                "controller": "MyAppGuiController as gui",
+                "templateUrl": "/static/html/myapp-gui.html"
+            }
         }
     },
     "model": {
+        "buttonsReport": {},
         "dog": {
             "breed": ["Breed", "String"],
             "gender": ["Gender", "Gender", "male"],
@@ -35,6 +44,11 @@
         "heightWeightReport": {}
     },
     "view": {
+        "buttonsReport": {
+            "title": "Buttons",
+            "basic": [],
+            "advanced": []
+        },
         "dog": {
             "title": "Dog",
             "basic": [
