@@ -77,7 +77,7 @@ SIREPO.app.directive('buttonsReport', function() {
         template: `
             <div class="row">
                 <div class="col col-md-6">
-                    <div style="padding: 8px 8px;"><label>Action Buttons</label></div>
+                    <div style="padding: 8px 8px;"><label>Action Buttons</label><span data-sr-tooltip="Proposed class change from btn-info to btn-primary"></span></div>
                     <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Move up"><span class="glyphicon glyphicon-arrow-up"></span></button></span>
                     <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Move down"><span class="glyphicon glyphicon-arrow-down"></span></button></span>
                     <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Copy"><span class="glyphicon glyphicon-duplicate"></span></button></span>
