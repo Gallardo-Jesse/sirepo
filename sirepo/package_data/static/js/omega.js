@@ -9,7 +9,7 @@ SIREPO.app.config(() => {
           <div data-dynamic-sim-list="" data-model="model" data-field="field"></div>
         </div>
         <div data-ng-switch-when="SimArray">
-          <div data-sim-array="" data-model="model" data-field="field" data-sub-model-name="coupledSim"></div>
+         <div data-sim-array="" data-model="model" data-field="field" data-sub-model-name="coupledSim"></div>
         </div>
     `;
 
@@ -192,7 +192,7 @@ SIREPO.app.directive('dynamicSimList', function(appState) {
         },
         template: `
           <div data-ng-if="code == selectedCode() && code">
-            <div data-sim-list="" data-model="model" data-field="field" data-code="{{ selectedCode() }}" data-route="visualization"></div>
+            ----<div data-sim-list="" data-model="model" data-field="field" data-code="{{ selectedCode() }}" data-route="visualization"></div>
           </div>
         `,
         controller: function($scope, requestSender) {
@@ -205,7 +205,7 @@ SIREPO.app.directive('dynamicSimList', function(appState) {
                     }
                 );
             };
-
+            srdbg('$scope in dynamicSimlist', $scope);
             if (SIREPO.APP_SCHEMA.relatedSimTypes) {
                 SIREPO.APP_SCHEMA.relatedSimTypes.forEach(simType => {
                     requestSimListByType(simType);
@@ -214,6 +214,8 @@ SIREPO.app.directive('dynamicSimList', function(appState) {
             $scope.selectedCode = () => {
                 if ($scope.model) {
                     $scope.code = $scope.model.simulationType;
+                    srdbg("$scope.code", $scope.code, "$scope.model", $scope.model, "$scope.field", $scope.field);
+                    // srdbg("$scope.field", $scope.field, "$scope.model.simulationType", $scope.model.simulationType);
                     return $scope.code;
                 }
             };
@@ -238,7 +240,7 @@ SIREPO.app.directive('simArray', function(appState) {
                 <div class="form-group">
                   <div class="col-sm-1 control-label"><label>{{ $index + 1 }}</label></div>
                   <div data-model-field="'simulationType'" data-model-name="subModelName" data-model-data="modelData($index)" data-label-size="0" data-field-size="4"></div>
-                  <div data-model-field="'simulationId'" data-model-name="subModelName" data-model-data="modelData($index)" data-label-size="0" data-field-size="6"></div>
+                  ccc<div data-model-field="'simulationId'" data-model-name="subModelName" data-model-data="modelData($index)" data-label-size="0" data-field-size="6"></div>
                 </div>
               </div>
             </div>
@@ -246,16 +248,22 @@ SIREPO.app.directive('simArray', function(appState) {
         `,
         controller: function($scope) {
             const modelData = {};
-
+            srdbg("model[field]", $scope.model[$scope.field]);
             function checkArray() {
                 // ensure there is always an empty selection available at the end of the list
                 const a = $scope.model[$scope.field];
                 if (! a.length || (a[a.length - 1].simulationType && a[a.length - 1].simulationId)) {
                     a.push(appState.setModelDefaults({}, $scope.subModelName));
                 }
+                srdbg("a", a);
             }
-
-            $scope.label = field => appState.modelInfo($scope.subModelName)[field][0];
+            srdbg("subModelName" ,$scope.subModelName);
+            $scope.label = (field) => {
+                var l = appState.modelInfo($scope.subModelName)[field][0];
+                // srdbg("label -->", l);
+                // srdbg("appState.modelInfo($scope.subModelName)", appState.modelInfo($scope.subModelName));
+                return l;
+            }
 
             $scope.modelData = index => {
                 if (! $scope.model) {
@@ -269,6 +277,7 @@ SIREPO.app.directive('simArray', function(appState) {
                 }
                 return modelData[index];
             };
+            srdbg("$scope.modelData(1).getData()", $scope.modelData(1).getData());
         },
     };
 });
@@ -282,6 +291,7 @@ SIREPO.viewLogic('simWorkflowView', function(appState, $scope) {
                 sims.push(s);
             }
         }
+        srdbg("sims: ", sims);
         sims.push(appState.setModelDefaults({}, 'coupledSim'));
         w.coupledSims = sims;
         appState.saveQuietly('simWorkflow');

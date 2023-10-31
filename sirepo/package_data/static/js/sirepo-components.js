@@ -4989,7 +4989,15 @@ SIREPO.app.directive('simList', function(appState, requestSender) {
         `,
         controller: function($scope) {
             $scope.simList = null;
-
+            srdbg('in components $scope.code',
+                $scope.code,
+                '$scope.route',
+                $scope.route,
+                '$scope.model',
+                $scope.model,
+                '$scope.field',
+                $scope.field,
+            )
             // special processing of the item's name if necessary
             $scope.itemName = function(item) {
                 return item.invalidMsg ? `${item.name} <${item.invalidMsg}>` : item.name;
