@@ -195,7 +195,22 @@ SIREPO.app.directive('dynamicSimList', function(appState) {
             <div data-sim-list="" data-model="model" data-field="field" data-code="{{ selectedCode() }}" data-route="visualization"></div>
           </div>
         `,
-        controller: function($scope) {
+        controller: function($scope, requestSender) {
+            const requestSimListByType = (simType) => {
+                requestSender.sendRequest(
+                    'listSimulations',
+                    () => {},
+                    {
+                        simulationType: simType,
+                    }
+                );
+            };
+
+            if (SIREPO.APP_SCHEMA.relatedSimTypes) {
+                SIREPO.APP_SCHEMA.relatedSimTypes.forEach(simType => {
+                    requestSimListByType(simType);
+                });
+            }
             $scope.selectedCode = () => {
                 if ($scope.model) {
                     $scope.code = $scope.model.simulationType;
