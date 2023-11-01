@@ -283,7 +283,36 @@ SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
     //     get sims for that sim Type and iterate
     //         if there is not match on simulationId
     //             then upate to use name
+    const cleanSims = () => {
+        for (const s of appState.models.simWorkflow.coupledSims) {
+            if (s.simulationType && s.simulationId) {
+                requestSender.sendStatefulCompute(
+                    appState,
+                    function(data) {
+                        for (let sim of data.simList) {
+                            if (sim.simulationId == s.simulationId) {
+                                // srdbg("newID", sim.simulationId);
+                                return;
+                            }
+                        }
+                        for (let sim of data.simList) {
+                            if (sim.name == s.name) {
+                                srdbg("newID", sim.simulationId);
+                                s.simulationId = sim.simulationId;
+                            }
+                        }
 
+                    },
+                    {
+                        method: 'get_' + s.simulationType + '_sim_list'
+                    }
+                )
+            }
+        }
+        srdbg('cleaned sims', appState.models.simWorkflow.coupledSims);
+    }
+
+    cleanSims();
     $scope.$on('simWorkflow.changed', () => {
         const w = appState.models.simWorkflow;
         const sims = [];
