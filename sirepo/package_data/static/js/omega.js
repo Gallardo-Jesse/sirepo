@@ -192,7 +192,7 @@ SIREPO.app.directive('dynamicSimList', function(appState) {
         },
         template: `
           <div data-ng-if="code == selectedCode() && code">
-            ----<div data-sim-list="" data-model="model" data-field="field" data-code="{{ selectedCode() }}" data-route="visualization"></div>
+            <div data-sim-list="" data-model="model" data-field="field" data-code="{{ selectedCode() }}" data-route="visualization"></div>
           </div>
         `,
         controller: function($scope, requestSender) {
@@ -205,7 +205,6 @@ SIREPO.app.directive('dynamicSimList', function(appState) {
                     }
                 );
             };
-            srdbg('$scope in dynamicSimlist', $scope);
             if (SIREPO.APP_SCHEMA.relatedSimTypes) {
                 SIREPO.APP_SCHEMA.relatedSimTypes.forEach(simType => {
                     requestSimListByType(simType);
@@ -214,8 +213,6 @@ SIREPO.app.directive('dynamicSimList', function(appState) {
             $scope.selectedCode = () => {
                 if ($scope.model) {
                     $scope.code = $scope.model.simulationType;
-                    srdbg("$scope.code", $scope.code, "$scope.model", $scope.model, "$scope.field", $scope.field);
-                    // srdbg("$scope.field", $scope.field, "$scope.model.simulationType", $scope.model.simulationType);
                     return $scope.code;
                 }
             };
@@ -240,7 +237,7 @@ SIREPO.app.directive('simArray', function(appState) {
                 <div class="form-group">
                   <div class="col-sm-1 control-label"><label>{{ $index + 1 }}</label></div>
                   <div data-model-field="'simulationType'" data-model-name="subModelName" data-model-data="modelData($index)" data-label-size="0" data-field-size="4"></div>
-                  ccc<div data-model-field="'simulationId'" data-model-name="subModelName" data-model-data="modelData($index)" data-label-size="0" data-field-size="6"></div>
+                  <div data-model-field="'simulationId'" data-model-name="subModelName" data-model-data="modelData($index)" data-label-size="0" data-field-size="6"></div>
                 </div>
               </div>
             </div>
@@ -248,16 +245,14 @@ SIREPO.app.directive('simArray', function(appState) {
         `,
         controller: function($scope) {
             const modelData = {};
-            srdbg("model[field]", $scope.model[$scope.field]);
             function checkArray() {
                 // ensure there is always an empty selection available at the end of the list
                 const a = $scope.model[$scope.field];
                 if (! a.length || (a[a.length - 1].simulationType && a[a.length - 1].simulationId)) {
                     a.push(appState.setModelDefaults({}, $scope.subModelName));
                 }
-                srdbg("a", a);
             }
-            srdbg("subModelName" ,$scope.subModelName);
+
             $scope.label = (field) => {
                 var l = appState.modelInfo($scope.subModelName)[field][0];
                 // srdbg("label -->", l);
@@ -277,23 +272,36 @@ SIREPO.app.directive('simArray', function(appState) {
                 }
                 return modelData[index];
             };
-            srdbg("$scope.modelData(1).getData()", $scope.modelData(1).getData());
         },
     };
 });
 
-SIREPO.viewLogic('simWorkflowView', function(appState, $scope) {
+SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
+    srdbg("appState.models.simWorkFlow", appState.models.simWorkflow);
     $scope.$on('simWorkflow.changed', () => {
         const w = appState.models.simWorkflow;
         const sims = [];
         for (const s of w.coupledSims) {
             if (s.simulationType && s.simulationId) {
+                requestSender.sendStatefulCompute(
+                    appState,
+                    function(data) {
+                        for (let simulation of data.simList) {
+                            if (simulation.simulationId == s.simulationId) {
+                                s.name = simulation.name;
+                            }
+                        }
+                    },
+                    {
+                        method: 'get_' + s.simulationType + '_sim_list'
+                    },
+                )
                 sims.push(s);
             }
         }
-        srdbg("sims: ", sims);
         sims.push(appState.setModelDefaults({}, 'coupledSim'));
         w.coupledSims = sims;
+        srdbg('w.coupledSims', w.coupledSims);
         appState.saveQuietly('simWorkflow');
     });
 });
