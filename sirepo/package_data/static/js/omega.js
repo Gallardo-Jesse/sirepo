@@ -278,6 +278,12 @@ SIREPO.app.directive('simArray', function(appState) {
 
 SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
     srdbg("appState.models.simWorkFlow", appState.models.simWorkflow);
+
+    // iterate over appState.models.simWorkFlow.coupledSims
+    //     get sims for that sim Type and iterate
+    //         if there is not match on simulationId
+    //             then upate to use name
+
     $scope.$on('simWorkflow.changed', () => {
         const w = appState.models.simWorkflow;
         const sims = [];
@@ -301,7 +307,7 @@ SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
         }
         sims.push(appState.setModelDefaults({}, 'coupledSim'));
         w.coupledSims = sims;
-        srdbg('w.coupledSims', w.coupledSims);
+        // TODO gurhar1133: fix double save
         appState.saveQuietly('simWorkflow');
     });
 });
