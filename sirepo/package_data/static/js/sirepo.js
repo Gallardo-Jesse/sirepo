@@ -470,13 +470,13 @@ SIREPO.app.factory('appState', function(errorService, fileManager, requestQueue,
         return self.clone(val);
     };
 
-    self.copySimulation = function(simulationId, op, name, folder) {
+    self.copySimulation = function(simulationId, op, name, folder, simType) {
         requestSender.sendRequest(
             'copySimulation',
             op,
             {
                 simulationId: simulationId,
-                simulationType: SIREPO.APP_SCHEMA.simulationType,
+                simulationType: simType || SIREPO.APP_SCHEMA.simulationType,
                 name: name,
                 folder: folder || '/',
             });

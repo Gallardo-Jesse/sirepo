@@ -331,6 +331,15 @@ SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
                         method: 'get_' + s.simulationType + '_sim_list'
                     },
                 )
+                appState.copySimulation(
+                    s.simulationId,
+                    () => {
+                        srdbg("copied");
+                    },
+                    s.name,
+                    'subSimCopies',
+                    s.simulationType,
+                )
                 sims.push(s);
             }
         }

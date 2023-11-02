@@ -530,6 +530,7 @@ def read_simulation_json(sim_type, sid, qcall):
     Returns:
         data (dict): simulation data
     """
+    pkdp("\n\n\n attempting read_sim_json, sim_type={}, sid={}\n\n\n", sim_type, sid)
     p = sim_data_file(sim_type, sid, qcall=qcall)
     if not p.exists():
         raise util.SPathNotFound(sim_type=sim_type, sid=sid, uid=_uid_arg(qcall))
