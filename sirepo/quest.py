@@ -147,6 +147,7 @@ class API(pykern.quest.API):
         )
 
     def parse_post(self, **kwargs):
+        pkdp("\n\n\n http_request={} type={}\n\n\n", http_request, type(http_request))
         return http_request.parse_post(self, PKDict(kwargs))
 
     def reply(self, **kwargs):

@@ -289,6 +289,7 @@ SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
                 requestSender.sendStatefulCompute(
                     appState,
                     function(data) {
+                        srdbg("data from cleanSims api return", data);
                         for (let sim of data.simList) {
                             if (sim.simulationId == s.simulationId) {
                                 // srdbg("newID", sim.simulationId);
@@ -337,7 +338,7 @@ SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
                         srdbg("copied");
                     },
                     s.name,
-                    'subSimCopies',
+                    '/nonOmegaSubSimCopies',
                     s.simulationType,
                 )
                 sims.push(s);

@@ -560,9 +560,11 @@ def save_new_example(data, qcall=None):
     )
 
 
-def save_new_simulation(data, do_validate=True, qcall=None):
-    d = simulation_dir(data.simulationType, qcall=qcall)
-    sid = mkdir_random(d, data.simulationType).id
+def save_new_simulation(data, do_validate=True, qcall=None, omega_related=False):
+    t = "omega" if omega_related else data.simulationType
+    pkdp("\n\n\n omega_related?={}\n\n", omega_related)
+    d = simulation_dir(t, qcall=qcall)
+    sid = mkdir_random(d, t).id
     data.models.simulation.simulationId = sid
     data.models.simulation.simulationSerial = _SERIAL_INITIALIZE
     data.pkdel("version")

@@ -87,6 +87,9 @@ class API(sirepo.quest.API):
     async def api_copySimulation(self):
         """Takes the specified simulation and returns a newly named copy with the suffix ( X)"""
         req = self.parse_post(id=True, folder=True, name=True, template=True)
+        # pkdp("\n\n\nreq={}\n\n\n", req)
+        if "nonOmegaSubSimCopies" in req.folder:
+            req.omega_related = True
         d = simulation_db.read_simulation_json(req.type, sid=req.id, qcall=self)
         d.models.simulation.pkupdate(
             name=req.name,
@@ -683,7 +686,11 @@ class API(sirepo.quest.API):
     def _save_new_and_reply(self, req, data):
         return self._simulation_data_reply(
             req,
-            simulation_db.save_new_simulation(data, qcall=self),
+            simulation_db.save_new_simulation(
+                data,
+                qcall=self,
+                omega_related=req.get("omega_related", False),
+            ),
         )
 
     def _simulation_data_reply(self, req, data):

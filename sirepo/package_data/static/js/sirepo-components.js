@@ -510,7 +510,7 @@ SIREPO.app.directive('copyConfirmation', function(appState, fileManager, strings
                     $scope.copyCfg.completion,
                     $scope.copyCfg.copyName,
                     $scope.copyCfg.copyFolder,
-                    null,
+                    false,
                 );
             };
         },
