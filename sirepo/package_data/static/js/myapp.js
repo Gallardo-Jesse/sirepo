@@ -6,6 +6,7 @@ var srdbg = SIREPO.srdbg;
 SIREPO.app.config(() => {
     SIREPO.appReportTypes = `
         <div data-ng-switch-when="buttons" data-buttons-report="" class="sr-plot" data-model-name="{{ modelKey }}" data-report-id="reportId"></div>
+        <div data-ng-switch-when="icons" data-icons-report="" class="sr-plot" data-model-name="{{ modelKey }}" data-report-id="reportId"></div>
     `;
 });
 
@@ -88,6 +89,32 @@ SIREPO.app.directive('buttonsReport', function() {
                     <div style="padding: 8px 8px;"><label>Dialog Buttons</label></div>
                     <button class="btn btn-primary"">Save Changes</button>
                     <button class="btn btn-default">Cancel</button>
+                </div>
+            </div>
+        `,
+        controller: function($scope) {
+        },
+    };
+});
+
+SIREPO.app.directive('iconsReport', function() {
+    return {
+        restrict: 'A',
+        scope: {
+        },
+        template: `
+            <div class="row">
+                <div class="col col-md-6">
+                    <div style="padding: 8px 8px;"><label>Status Icons</label></div>
+                    <span class="glyphicon glyphicon-ban-circle" style="padding: 8px 8px;" title="Canceled"></span>
+                    <span class="glyphicon glyphicon-ok-circle"  style="padding: 8px 8px; color:green" title="Completed"></span>
+                    <span class="glyphicon glyphicon-remove" style="padding: 8px 8px; color:red" title="Error"></span>
+                    <span class="glyphicon glyphicon-question-sign"  style="padding: 8px 8px;" title="Missing"></span>
+                    <span class="glyphicon glyphicon-minus"  style="padding: 8px 8px;" title="None / Not Started"></span>
+                    <span class="glyphicon glyphicon-hourglass"  style="padding: 8px 8px;" title="Pending"></span>
+                    <span class="glyphicon glyphicon-refresh running-icon"  style="padding: 8px 8px;" title="Running"></span>
+                </div>
+                <div class="col col-md-6">
                 </div>
             </div>
         `,

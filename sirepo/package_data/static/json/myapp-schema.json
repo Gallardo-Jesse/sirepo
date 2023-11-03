@@ -68,6 +68,11 @@
         "heightWeightReport": {
             "title": "Physical Characteristics",
             "advanced": []
+        },
+        "iconsReport": {
+            "title": "Icons",
+            "basic": [],
+            "advanced": []
         }
     }
 }
