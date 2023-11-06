@@ -335,6 +335,10 @@ SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
                     },
                 )
                 appState.copySimulation(
+                    // TODO: maybe rather than copying to /nonOmegaSubSimCopies
+                    // should copy data to omega sim data on appState or something?
+                    // then easily accessible from lined sim and can read and each of the
+                    // sub sims to their respective dirs?
                     s.simulationId,
                     () => {
                         srdbg("copied");
