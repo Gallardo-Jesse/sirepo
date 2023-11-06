@@ -564,7 +564,10 @@ def save_new_simulation(data, do_validate=True, qcall=None, omega_related=False)
     t = "omega" if omega_related else data.simulationType
     pkdp("\n\n\n omega_related?={}\n\n", omega_related)
     d = simulation_dir(t, qcall=qcall)
-    sid = mkdir_random(d, t).id
+    pkdp("\n\n\nsimulation_dir={}", d)
+    m = mkdir_random(d, t)
+    pkdp("\n\n\nrand dir={}", m)
+    sid = m.id
     data.models.simulation.simulationId = sid
     data.models.simulation.simulationSerial = _SERIAL_INITIALIZE
     data.pkdel("version")
@@ -574,10 +577,11 @@ def save_new_simulation(data, do_validate=True, qcall=None, omega_related=False)
         qcall=qcall,
         fixup=True,
         modified=True,
+        omega_related=omega_related
     )
 
 
-def save_simulation_json(data, fixup, do_validate=True, qcall=None, modified=False):
+def save_simulation_json(data, fixup, do_validate=True, qcall=None, modified=False, omega_related=False):
     """Prepare data and save to json db
 
     Args:
@@ -645,7 +649,7 @@ def save_simulation_json(data, fixup, do_validate=True, qcall=None, modified=Fal
     data.pkdel("computeJobHash")
     s = data.models.simulation
     sim_type = data.simulationType
-    fn = sim_data_file(sim_type, s.simulationId, qcall=qcall)
+    fn = sim_data_file(sim_type if not omega_related else "omega", s.simulationId, qcall=qcall)
     with user_lock(qcall=qcall):
         need_validate = True
         on_disk = None
@@ -673,6 +677,7 @@ def save_simulation_json(data, fixup, do_validate=True, qcall=None, modified=Fal
         pkcollections.unchecked_del(d.models, "simulationStatus", "computeJobCacheKey")
         if modified:
             d.models.simulation.lastModified = srtime.utc_now_as_milliseconds()
+        pkdp("\n\n\nd={}\n\n\nfn={}", d, fn)
         write_json(fn, d)
     return data
 
