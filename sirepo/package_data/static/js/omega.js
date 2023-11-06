@@ -183,7 +183,7 @@ SIREPO.app.directive('beamAndPhasePlots', function(appState, omegaService) {
     };
 });
 
-SIREPO.app.directive('dynamicSimList', function(appState) {
+SIREPO.app.directive('dynamicSimList', function(appState, requestSender) {
     return {
         restrict: 'A',
         scope: {
@@ -195,7 +195,7 @@ SIREPO.app.directive('dynamicSimList', function(appState) {
             <div data-sim-list="" data-model="model" data-field="field" data-code="{{ selectedCode() }}" data-route="visualization"></div>
           </div>
         `,
-        controller: function($scope, requestSender) {
+        controller: function($scope) {
             const requestSimListByType = (simType) => {
                 requestSender.sendRequest(
                     'listSimulations',
