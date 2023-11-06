@@ -196,6 +196,8 @@ SIREPO.app.directive('dynamicSimList', function(appState, requestSender) {
           </div>
         `,
         controller: function($scope) {
+            // TODO: request non-omega-sub-sims from where?,
+            // copy them to original sim dir
             const requestSimListByType = (simType) => {
                 requestSender.sendRequest(
                     'listSimulations',

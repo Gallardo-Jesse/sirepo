@@ -674,6 +674,9 @@ def save_simulation_json(data, fixup, do_validate=True, qcall=None, modified=Fal
         s.simulationSerial = _serial(s, on_disk)
         # Do not write simulationStatus or computeJobCacheKey
         d = copy.deepcopy(data)
+        # TODO: if we are copying a non-omega-sim, we need to add the orginal sim type to
+        # the data, we should also save this sim data to the omega sim data so that it gets
+        # passed along in the link or something along those lines
         pkcollections.unchecked_del(d.models, "simulationStatus", "computeJobCacheKey")
         if modified:
             d.models.simulation.lastModified = srtime.utc_now_as_milliseconds()
