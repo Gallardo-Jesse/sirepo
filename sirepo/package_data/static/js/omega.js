@@ -196,8 +196,9 @@ SIREPO.app.directive('dynamicSimList', function(appState, requestSender) {
           </div>
         `,
         controller: function($scope) {
-            // TODO: request non-omega-sub-sims from where?,
-            // copy them to original sim dir
+            // TODO: First iterate over all the sims in appState.models.relatedSimsDataList
+            // and copies those sims to their respective code’s sims list
+            // Execute below stuff in a call back from the api call function discussed above
             const requestSimListByType = (simType) => {
                 requestSender.sendRequest(
                     'listSimulations',
@@ -280,11 +281,6 @@ SIREPO.app.directive('simArray', function(appState) {
 
 SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
     srdbg("appState.models.simWorkFlow", appState.models.simWorkflow);
-
-    // iterate over appState.models.simWorkFlow.coupledSims
-    //     get sims for that sim Type and iterate
-    //         if there is not match on simulationId
-    //             then upate to use name
     const cleanSims = () => {
         for (const s of appState.models.simWorkflow.coupledSims) {
             if (s.simulationType && s.simulationId) {
@@ -335,10 +331,8 @@ SIREPO.viewLogic('simWorkflowView', function(appState, requestSender, $scope) {
                     },
                 )
                 appState.copySimulation(
-                    // TODO: maybe rather than copying to /nonOmegaSubSimCopies
-                    // should copy data to omega sim data on appState or something?
-                    // then easily accessible from lined sim and can read and each of the
-                    // sub sims to their respective dirs?
+                    // TODO: This should be new API that copies subSim data
+                    // to the omega sim's data, not to a dir
                     s.simulationId,
                     () => {
                         srdbg("copied");
