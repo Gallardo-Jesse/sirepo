@@ -171,6 +171,42 @@ SIREPO.app.directive('iconsReport', function() {
                         },
                     ],
                 },
+                {
+                    name: 'header',
+                    title: 'Header',
+                    icons: [
+                        {
+                            type: 'sims',
+                            title: 'Simulations',
+                            glyphicon: 'th-list',
+                        },
+                        {
+                            type: 'new-sim', 
+                            title: 'New Simulation',
+                            glyphicon: 'file',
+                        },
+                        {
+                            type: 'new-folder',
+                            title: 'New Folder',
+                            glyphicon: 'folder-close',
+                        },
+                        {
+                            type: 'help',
+                            title: 'Help',
+                            glyphicon: 'question-sign',
+                        },
+                        {
+                            type: 'source',
+                            title: 'Source Tab',
+                            glyphicon: 'flash',
+                        },
+                        {
+                            type: 'visualization',
+                            title: 'Visualization Tab',
+                            glyphicon: 'picture',
+                        },
+                    ],
+                },
             ];
 
             $scope.codeId = (group, item) => `code-${group.name}-${item.type}`;
