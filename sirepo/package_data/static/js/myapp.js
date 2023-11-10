@@ -104,21 +104,82 @@ SIREPO.app.directive('iconsReport', function() {
         },
         template: `
             <div class="row">
-                <div class="col col-md-6">
-                    <div style="padding: 8px 8px;"><label>Status Icons</label></div>
-                    <span class="glyphicon glyphicon-ban-circle" style="padding: 8px 8px;" title="Canceled"></span>
-                    <span class="glyphicon glyphicon-ok-circle"  style="padding: 8px 8px; color:green" title="Completed"></span>
-                    <span class="glyphicon glyphicon-remove" style="padding: 8px 8px; color:red" title="Error"></span>
-                    <span class="glyphicon glyphicon-question-sign"  style="padding: 8px 8px;" title="Missing"></span>
-                    <span class="glyphicon glyphicon-minus"  style="padding: 8px 8px;" title="None / Not Started"></span>
-                    <span class="glyphicon glyphicon-hourglass"  style="padding: 8px 8px;" title="Pending"></span>
-                    <span class="glyphicon glyphicon-refresh running-icon"  style="padding: 8px 8px;" title="Running"></span>
-                </div>
-                <div class="col col-md-6">
-                </div>
+                <div class="col col-md-12">
+                    <div data-ng-repeat="group in iconGroups track by group.name" style="padding: 8px 8px;"><label>{{ group.title }} Icons</label>
+                        <table class="table table-striped table-condensed radia-table-dialog">
+                            <thead>
+                                <th>{{ group.title }}</th>
+                                <th>Icon</th>
+                                <th>Color</th>
+                                <th>Code</th>
+                            </thead>
+                            <tbody>
+                                <tr data-ng-repeat="item in group.icons track by $index">
+                                    <td>{{ item.title }}</td>
+                                    <td><span class="glyphicon glyphicon-{{ item.glyphicon }} {{ item.classes }}" style="padding: 8px 8px; color:{{ item.color }};" title="{{ item.title }}"></span></td>
+                                    <td>{{ item.color || 'Default' }}</td>
+                                    <td data-ng-click="copyCode(group, item)" style="cursor:copy;"><code id="{{ codeId(group, item) }}">&lt;span class="glyphicon glyphicon-{{ item.glyphicon }} {{ item.classes }}" title="{{ item.title }}"&gt;&lt;/span&gt;</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
             </div>
         `,
-        controller: function($scope) {
+        controller: function($scope, $element) {
+            $scope.iconGroups = [
+                {
+                    name: 'status',
+                    title: 'Status',
+                    icons: [
+                        {
+                            type: 'canceled',
+                            title: 'Canceled',
+                            glyphicon: 'ban-circle',
+                        },
+                        {
+                            type: 'completed', 
+                            title: 'Completed',
+                            glyphicon: 'ok-circle',
+                            color: 'green',
+                        },
+                        {
+                            type: 'error',
+                            title: 'Error',
+                            glyphicon: 'remove',
+                            color: 'red',
+                        },
+                        {
+                            type: 'missing',
+                            title: 'Missing',
+                            glyphicon: 'question-sign',
+                        },
+                        {
+                            type: 'none',
+                            title: 'None / Not Started',
+                            glyphicon: 'minus',
+                        },
+                        {
+                            type: 'pending',
+                            title: 'Pending',
+                            glyphicon: 'hourglass',
+                        },
+                        {
+                            type: 'running',
+                            title: 'Running',
+                            glyphicon: 'refresh',
+                            classes: 'running-icon',
+                        },
+                    ],
+                },
+            ];
+
+            $scope.codeId = (group, item) => `code-${group.name}-${item.type}`;
+
+            $scope.copyCode = (group, item) => {
+                navigator.clipboard.writeText(
+                    $($element).find(`code#${$scope.codeId(group, item)}`).text()
+                );
+            };
         },
     };
 });
