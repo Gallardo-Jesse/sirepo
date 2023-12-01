@@ -91,8 +91,24 @@ SIREPO.app.directive('buttonsReport', function() {
                     <button class="btn btn-default">Cancel</button>
                 </div>
             </div>
+            <div class="row">
+                <div class="col col-md-6">
+                    <div style="padding: 8px 8px;"><label>Boolean Button</label><span data-sr-tooltip="Proposed change to checkboxes from bootstrap"></span></div>
+                    <div>Current</div>
+                    <div class="toggle btn btn-primary" data-toggle="toggle" style="width: 61px; height: 34px;"><input data-ng-model="boolState" class="sr-bs-toggle" type="checkbox" data-ng-click="toggleBool()"><div class="toggle-group"><label class="btn btn-primary toggle-on">Yes</label><label class="btn btn-default active toggle-off">No</label><span class="toggle-handle btn btn-default"></span></div></div>
+                    <div>Proposed</div>
+                    <div><input data-ng-model="boolState" type="checkbox" data-ng-click="toggleBool()"></div>
+                </div>
+            </div>
         `,
         controller: function($scope) {
+            $scope.boolState = {
+                state: true,
+            };
+            $scope.toggleBool = () => {
+                srdbg($scope.boolState);
+                $scope.boolState.state = ! $scope.boolState.state;
+            };
         },
     };
 });
