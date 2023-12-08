@@ -78,12 +78,19 @@ SIREPO.app.directive('buttonsReport', function() {
         template: `
             <div class="row">
                 <div class="col col-md-6">
-                    <div style="padding: 8px 8px;"><label>Action Buttons</label><span data-sr-tooltip="Proposed class change from btn-info to btn-primary"></span></div>
-                    <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Move up"><span class="glyphicon glyphicon-arrow-up"></span></button></span>
-                    <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Move down"><span class="glyphicon glyphicon-arrow-down"></span></button></span>
-                    <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Copy"><span class="glyphicon glyphicon-duplicate"></span></button></span>
-                    <span style="padding: 8px 8px;"><button class="btn btn-primary btn-xs" title="Edit"><span class="glyphicon glyphicon-pencil"></span></button></span>
-                    <span style="padding: 8px 8px;"><button class="btn btn-danger btn-xs" title="Delete"><span class="glyphicon glyphicon-remove"></span></button></span>
+                    <div style="padding: 8px 4px;"><label>Action Buttons</label><span data-sr-tooltip="Proposed class change from btn-info to btn-primary"></span></div>
+                    <div>Current</div>
+                    <span style="padding: 8px 4px;"><button class="btn btn-info btn-xs" title="move up"><span class="glyphicon glyphicon-arrow-up"></span></button></span>
+                    <span style="padding: 8px 4px;"><button class="btn btn-info btn-xs" title="move down"><span class="glyphicon glyphicon-arrow-down"></span></button></span>
+                    <span style="padding: 8px 4px;"><button class="btn btn-info btn-xs" title="copy"><span class="glyphicon glyphicon-duplicate"></span></button></span>
+                    <span style="padding: 8px 4px;"><button class="btn btn-info btn-xs" title="edit"><span class="glyphicon glyphicon-pencil"></span></button></span>
+                    <span style="padding: 8px 4px;"><button class="btn btn-danger btn-xs" title="delete"><span class="glyphicon glyphicon-remove"></span></button></span>
+                    <div>Proposed</div>
+                    <span style="padding: 8px 4px;"><button class="btn btn-primary btn-xs" title="Move up"><span class="glyphicon glyphicon-arrow-up"></span></button></span>
+                    <span style="padding: 8px 4px;"><button class="btn btn-primary btn-xs" title="Move down"><span class="glyphicon glyphicon-arrow-down"></span></button></span>
+                    <span style="padding: 8px 4px;"><button class="btn btn-primary btn-xs" title="Copy"><span class="glyphicon glyphicon-duplicate"></span></button></span>
+                    <span style="padding: 8px 4px;"><button class="btn btn-primary btn-xs" title="Edit"><span class="glyphicon glyphicon-pencil"></span></button></span>
+                    <span style="padding: 8px 4px;"><button class="btn btn-danger btn-xs" title="Delete"><span class="glyphicon glyphicon-remove"></span></button></span>
                 </div>
                 <div class="col col-md-6">
                     <div style="padding: 8px 8px;"><label>Dialog Buttons</label></div>
@@ -95,19 +102,51 @@ SIREPO.app.directive('buttonsReport', function() {
                 <div class="col col-md-6">
                     <div style="padding: 8px 8px;"><label>Boolean Button</label><span data-sr-tooltip="Proposed change to checkboxes from bootstrap"></span></div>
                     <div>Current</div>
-                    <div class="toggle btn btn-primary" data-toggle="toggle" style="width: 61px; height: 34px;"><input data-ng-model="boolState" class="sr-bs-toggle" type="checkbox" data-ng-click="toggleBool()"><div class="toggle-group"><label class="btn btn-primary toggle-on">Yes</label><label class="btn btn-default active toggle-off">No</label><span class="toggle-handle btn btn-default"></span></div></div>
+                    <div class="toggle btn btn-primary"  style="width: 61px; height: 34px;"><input data-ng-model="boolState" class="sr-bs-toggle" type="checkbox" data-ng-click="toggleBool()"><div class="toggle-group"><label class="btn btn-primary toggle-on">Yes</label><label class="btn btn-default active toggle-off">No</label><span class="toggle-handle btn btn-default"></span></div></div>
                     <div>Proposed</div>
-                    <div><input data-ng-model="boolState" type="checkbox" data-ng-click="toggleBool()"></div>
+                    <div>TBD</div>
+                </div>
+                <div class="col col-md-6">
+                    <div style="padding: 8px 8px;"><label>Checkbox Group</label><span data-sr-tooltip="Proposed change to grouped checkboxes from glyphicons"></span></div>
+                    <div>Current</div>
+                    <div>All <span class="glyphicon" data-ng-class="checkboxGroup.all ? 'glyphicon-check' : 'glyphicon-unchecked'" data-ng-model="checkboxGroup.all" data-ng-click="toggleAll()"></span> One <span class="glyphicon" data-ng-class="checkboxGroup.one ? 'glyphicon-check' : 'glyphicon-unchecked'" data-ng-model="checkboxGroup.one" data-ng-click="toggleCheck('one')"></span> Two <span class="glyphicon"  data-ng-class="checkboxGroup.two ? 'glyphicon-check' : 'glyphicon-unchecked'" data-ng-model="checkboxGroup.two" data-ng-click="toggleCheck('two')"></span></div>
+                    <div>Proposed</div>
+                    <div>All <input id="all_new" type="checkbox" data-ng-model="group" data-ng-click="toggleAll()" style="accent-color: #337ab7;"> One <input type="checkbox" data-ng-model="checkboxGroup.one" data-ng-click="toggleCheck('one')" style="accent-color: #337ab7;"> Two <input type="checkbox" data-ng-model="checkboxGroup.two" data-ng-click="toggleCheck('two')" style="accent-color: #337ab7;"></div>
                 </div>
             </div>
         `,
-        controller: function($scope) {
-            $scope.boolState = {
-                state: true,
+        controller: function($scope, $element) {
+            
+            $scope.group = true;
+            $scope.checkboxGroup = {
+                one: true,
+                two: true,
             };
-            $scope.toggleBool = () => {
-                srdbg($scope.boolState);
-                $scope.boolState.state = ! $scope.boolState.state;
+        
+
+            $scope.toggleAll = () => {
+                $scope.group = ! $scope.group;
+                for (const name in $scope.checkboxGroup) {
+                    $scope.checkboxGroup[name] = $scope.group;
+                }
+            };
+
+            $scope.toggleCheck = name => {
+                $scope.checkboxGroup[name] = ! $scope.checkboxGroup[name];
+                const vals = Object.values($scope.checkboxGroup);
+                let v =  vals[0];
+                let indeterminate = false;
+                for (let i = 0; i < vals.length; ++i) {
+                    indeterminate = vals[i] !== v;
+                    if (indeterminate) {
+                        break;
+                    }
+                    v = vals[i];
+                }
+                $($element).find('input#all_new')[0].indeterminate = indeterminate;
+                if (! indeterminate) {
+                    $scope.group = $scope.checkboxGroup[name];
+                }
             };
         },
     };
