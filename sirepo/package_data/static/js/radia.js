@@ -400,6 +400,13 @@ SIREPO.app.factory('radiaService', function(appState, fileUpload, geometry, pane
 SIREPO.app.factory('radiaVariableService', function(appState, radiaService, rpnService) {
     let self = {};
 
+    self.addRpn = (name, value) => {
+        if (! radiaService.getObjectByName(name, appState.models.rpnVariables)) {
+            appState.models.rpnVariables.push({name: name, value: value});
+        }
+        rpnService.recomputeCache(name, value);
+    };
+
     self.addressableObjects = (types) => {
 
         function optFieldsOfModelAndSupers(modelName) {
@@ -546,7 +553,7 @@ SIREPO.app.factory('radiaVariableService', function(appState, radiaService, rpnS
         // remove
         for (let i = rpns.length - 1; i >= 0; --i) {
             const rpn = rpns[i];
-            if (! oNames.includes(rpn.name)) {
+            if (! oNames.includes(rpn.name) && rpn.name.split('.').length > 1) {
                 rpns.splice(i, 1);
                 doSave = true;
             }
@@ -4057,7 +4064,7 @@ SIREPO.viewLogic('racetrackView', function(appState, panelState, radiaService, r
 
 for(const m of ['Dipole', 'Undulator']) {
     for (const d of SIREPO.APP_SCHEMA.enum[`${m}Type`]) {
-        SIREPO.viewLogic(`${d[0]}View`, function(appState, panelState, radiaService, validationService, $scope) {
+        SIREPO.viewLogic(`${d[0]}View`, function(appState, panelState, radiaService, radiaVariableService, $scope) {
 
             $scope.model = appState.models[$scope.modelName];
             $scope.watchFields = [
@@ -4138,6 +4145,11 @@ for(const m of ['Dipole', 'Undulator']) {
                 return models[$scope.$parent.activePage.name].objModelName;
             }
 
+            function addModelVars() {
+                ['gap'].forEach(x => radiaVariableService.addRpn(x, $scope.model[x]));
+                appState.saveChanges(['rpnVariables', 'rpnCache']);
+            }
+
             function getObjFromGeomRpt() {
                 return radiaService.getObject(activeModelId());
             }
@@ -4172,6 +4184,7 @@ for(const m of ['Dipole', 'Undulator']) {
                 radiaService.validateMagnetization(o.magnetization, o.material);
             }, true);
 
+            addModelVars();
         });
     }
 }
