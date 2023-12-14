@@ -664,7 +664,27 @@
                 "remanentMag": 1.0,
                 "material": "Xc06",
                 "type": "cuboid",
-                "size": [50.0, 40.0, 50.0]
+                "size": [50.0, 40.0, 50.0],
+                "transforms": [
+                    {
+                        "_super": "transform",
+                        "id": "nCLWF8v9haGDMb3C",
+                        "model": "symmetryTransform",
+                        "name": "Symmetry",
+                        "symmetryPlane": [
+                            0,
+                            0,
+                            1
+                        ],
+                        "symmetryPoint": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "symmetryType": "parallel",
+                        "type": "symmetryTransform"
+                    }
+                ]
             }],
             "corePoleGroup": ["_", "model.geomGroup", {
                 "name": "core + pole"

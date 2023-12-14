@@ -1721,7 +1721,6 @@ def _update_dipoleBasic(model, assembly, qcall=None, **kwargs):
         assembly.pole,
         size=sz,
         center=sz * d.height_dir / 2 + model.gap * d.height_dir / 2,
-        transforms=[_build_symm_xform(d.height_dir, "parallel")],
         qcall=qcall,
     )
 
@@ -1741,7 +1740,6 @@ def _update_dipoleC(model, assembly, qcall=None, **kwargs):
         assembly.pole,
         center=pole_ctr,
         size=pole_sz,
-        transforms=[_build_symm_xform(d.height_dir, "parallel")],
         qcall=qcall,
     )
     _update_geom_obj(assembly.magnet, center=mag_ctr, qcall=qcall)
