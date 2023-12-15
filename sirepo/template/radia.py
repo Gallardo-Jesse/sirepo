@@ -614,10 +614,9 @@ def _build_rpn_vars(model, geom_objs):
     res = []
     for o in geom_objs:
         for f in _find_addressables(o):
-            #sirepo.util.find_obj(res, "name", o.name)
             res.append(PKDict(name=f"{o.name}.{f}", value=o[f]))
-        for f in _find_addressables(model):
-            res.append(PKDict(name=f, value=model[f]))
+    for f in _find_addressables(model):
+        res.append(PKDict(name=f, value=model[f]))
     return res
 
 
