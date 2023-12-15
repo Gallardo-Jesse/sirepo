@@ -138,6 +138,8 @@ SIREPO.app.factory('radiaService', function(appState, fileUpload, geometry, pane
                 method: 'build_shape_points',
                 args: {
                     object: o,
+                    rpnVariables: appState.models.rpnVariables,
+
                 }
             },
             {
@@ -4107,6 +4109,9 @@ for(const m of ['Dipole', 'Undulator']) {
             });
 
             $scope.$on(`${$scope.modelName}.changed`, () => {
+                radiaService.getObjectByName('gap', appState.models.rpnVariables).value = $scope.model.gap;
+                radiaVariableService.updateRPNVars();
+                //appState.saveChanges('rpnVariables');
                 radiaService.saveGeometry(true, false);
             });
 

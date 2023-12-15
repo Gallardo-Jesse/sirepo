@@ -512,7 +512,7 @@
             "_super": ["_", "model", "dipoleBasic"],
             "coil": ["Coil", "model.racetrack", {
                 "axis": "z",
-                "center": [0.0, 131.25, 0.0],
+                "center": [0.0, "core.size[1] - core.stemWidth / 2 - pole.size[1] / 2", 0.0],
                 "color": "#ff0000",
                 "currentDensity": -2000.0,
                 "fieldCalc": "auto",
@@ -529,7 +529,7 @@
             "magnet": ["Magnet", "model.cee", {
                 "armHeight": 50.0,
                 "armPosition": "1",
-                "center": [0.0, 71.25, 0.0],
+                "center": [0.0, "core.size[1] / 2 - pole.size[1] / 2", 0.0],
                 "color": "#0000ff",
                 "extrusionAxis": "x",
                 "extrusionAxisSegments": 2,
@@ -543,7 +543,7 @@
                 "stemPosition": "1"
             }],
             "pole": ["Pole", "model.cuboid", {
-                "center": [0.0, 0.0, 30.0],
+                "center": [0.0, 0.0, "(core.size[2] / 2 - core.armHeight - gap / 2) / 2 + gap / 2"],
                 "color": "#0000ff",
                 "segments": [4, 4, 4],
                 "magnetization": [0.0, 0.0, 1.0],
@@ -665,7 +665,7 @@
                 "remanentMag": 1.0,
                 "material": "Xc06",
                 "type": "cuboid",
-                "size": [50.0, 40.0, 50.0],
+                "size": ["core.size[0]", 40.0, "core.size[2] / 2 - core.armHeight - gap / 2"],
                 "transforms": [
                     {
                         "_super": "transform",
@@ -1292,6 +1292,7 @@
                 ["Coil", [
                     "dipoleC.coil.color",
                     "dipoleC.coil.radii",
+                    "dipoleC.coil.center",
                     "dipoleC.coil.height",
                     "dipoleC.coil.sides",
                     "dipoleC.coil.size",
@@ -1299,6 +1300,7 @@
                 ]],
                 ["Core", [
                     "dipoleC.magnet.shapeButton",
+                    "dipoleC.magnet.center",
                     "dipoleC.magnet.size",
                     "dipoleC.magnet.material",
                     "dipoleC.magnet.materialFile",
@@ -1307,12 +1309,13 @@
                 ]],
                 ["Pole", [
                     "dipoleC.pole.shapeButton",
+                    "dipoleC.pole.center",
+                    "dipoleC.pole.size",
                     "dipoleC.pole.magnetization",
                     "dipoleC.pole.remanentMag",
                     "dipoleC.pole.material",
                     "dipoleC.pole.materialFile",
                     "dipoleC.pole.segments",
-                    "poleWidth",
                     "gap"
                 ]]
             ]
