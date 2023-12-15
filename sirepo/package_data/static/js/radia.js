@@ -4145,11 +4145,6 @@ for(const m of ['Dipole', 'Undulator']) {
                 return models[$scope.$parent.activePage.name].objModelName;
             }
 
-            function addModelVars() {
-                ['gap'].forEach(x => radiaVariableService.addRpn(x, $scope.model[x]));
-                appState.saveChanges(['rpnVariables', 'rpnCache']);
-            }
-
             function getObjFromGeomRpt() {
                 return radiaService.getObject(activeModelId());
             }
@@ -4183,8 +4178,6 @@ for(const m of ['Dipole', 'Undulator']) {
                 }
                 radiaService.validateMagnetization(o.magnetization, o.material);
             }, true);
-
-            addModelVars();
         });
     }
 }

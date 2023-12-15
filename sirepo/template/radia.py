@@ -328,6 +328,7 @@ def new_simulation(data, new_sim_data, qcall, **kwargs):
         length_dir=dirs.length_dir,
         width_dir=dirs.width_dir,
     )
+    data.models.rpnVariables = _build_rpn_vars(m, data.models.geometryReport.objects)
 
 
 def post_execution_processing(success_exit, is_parallel, run_dir, **kwargs):
@@ -609,6 +610,17 @@ def _build_group(members, name=None):
     )
 
 
+def _build_rpn_vars(model, geom_objs):
+    res = []
+    for o in geom_objs:
+        for f in _find_addressables(o):
+            #sirepo.util.find_obj(res, "name", o.name)
+            res.append(PKDict(name=f"{o.name}.{f}", value=o[f]))
+        for f in _find_addressables(model):
+            res.append(PKDict(name=f, value=model[f]))
+    return res
+
+
 def _build_symm_xform(plane, type, point=None):
     tx = _build_geom_obj("symmetryTransform")
     tx.symmetryPlane = plane.tolist()
@@ -858,6 +870,11 @@ def _field_lineout_plot(sim_id, name, f_type, f_path, plot_axis, field_data=None
             summaryData=PKDict(),
         ),
     )
+
+
+def _find_addressables(model):
+    m = SCHEMA.model[model.type]
+    return [f for f in m if "Scriptable" in m[f][1] or "Float" in m[f][1]]
 
 
 def _find_by_id(arr, obj_id):
