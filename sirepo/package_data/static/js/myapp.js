@@ -70,7 +70,7 @@ SIREPO.app.directive('appHeader', function(appState, panelState) {
     };
 });
 
-SIREPO.app.directive('buttonsReport', function() {
+SIREPO.app.directive('buttonsReport', function(appState) {
     return {
         restrict: 'A',
         scope: {
@@ -102,8 +102,16 @@ SIREPO.app.directive('buttonsReport', function() {
                 <div class="col col-md-6">
                     <div style="padding: 8px 8px;"><label>Boolean Button</label><span data-sr-tooltip="Proposed change to checkboxes from bootstrap"></span></div>
                     <div>Current</div>
-                    <div class="toggle btn btn-primary"  style="width: 61px; height: 34px;"><input data-ng-model="boolState" class="sr-bs-toggle" type="checkbox" data-ng-click="toggleBool()"><div class="toggle-group"><label class="btn btn-primary toggle-on">Yes</label><label class="btn btn-default active toggle-off">No</label><span class="toggle-handle btn btn-default"></span></div></div>
+                    <div data-field-editor="'bool'" data-model-name="'buttonsReport'" data-model="buttonsReport"></div>
                     <div>Proposed</div>
+                    <!--
+                    <div>
+                        <label>No</label>
+                        <div style="display: inline-block;">
+                            <input data-size="small" class="sr-bs-toggle" data-ng-model="buttonsReport" data-bootstrap-toggle="" data-model="buttonsReport" data-field="'bool'" data-info="booInfo" data-field-delegate="boolDelegate" type="checkbox"><span class="toggle-handle btn btn-default">
+                            <label>Yes</label>
+                        </div>
+                    -->
                     <div>TBD</div>
                 </div>
                 <div class="col col-md-6">
@@ -116,7 +124,9 @@ SIREPO.app.directive('buttonsReport', function() {
             </div>
         `,
         controller: function($scope, $element) {
-            
+            $scope.buttonsReport = appState.models.buttonsReport;
+            $scope.booInfo = appState.modelInfo('buttonsReport', 'bool').bool;
+            $scope.boolDelegate = () => {};
             $scope.group = true;
             $scope.checkboxGroup = {
                 one: true,

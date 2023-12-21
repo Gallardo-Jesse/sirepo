@@ -32,7 +32,9 @@
         }
     },
     "model": {
-        "buttonsReport": {},
+        "buttonsReport": {
+            "bool": ["", "Boolean", "1"]
+        },
         "dog": {
             "breed": ["Breed", "String"],
             "gender": ["Gender", "Gender", "male"],
@@ -46,7 +48,9 @@
     "view": {
         "buttonsReport": {
             "title": "Buttons",
-            "basic": [],
+            "basic": [
+                "bool"
+            ],
             "advanced": []
         },
         "dog": {
