@@ -93,9 +93,13 @@ SIREPO.app.directive('buttonsReport', function(appState) {
                     <span style="padding: 8px 4px;"><button class="btn btn-danger btn-xs" title="Delete"><span class="glyphicon glyphicon-remove"></span></button></span>
                 </div>
                 <div class="col col-md-6">
-                    <div style="padding: 8px 8px;"><label>Dialog Buttons</label></div>
-                    <button class="btn btn-primary"">Save Changes</button>
+                    <div style="padding: 8px 8px;"><label>Dialog Buttons</label><span data-sr-tooltip="Proposed text change from 'Save Changes' to 'Save'"></span></div>
+                    <div>Current</div>
+                    <button class="btn btn-primary">Save Changes</button>
                     <button class="btn btn-default">Cancel</button>
+                    <div>Proposed</div>
+                    <button class="btn btn-primary" title="Save">Save</button>
+                    <button class="btn btn-default" title="Cancel">Cancel</button>
                 </div>
             </div>
             <div class="row">
@@ -161,6 +165,7 @@ SIREPO.app.directive('buttonsReport', function(appState) {
         },
     };
 });
+
 
 SIREPO.app.directive('iconsReport', function() {
     return {
