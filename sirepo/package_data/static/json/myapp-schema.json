@@ -35,6 +35,11 @@
         "buttonsReport": {
             "bool": ["", "Boolean", "1"]
         },
+        "controlsReport": {
+            "jrange1": ["Range", "JRange", {"min": 0, "max": 1, "step": 0.01, "val": [0, 1], "space": "linear"}],
+            "jrange2": ["Range", "JRange", {"min": 0, "max": 1, "step": 0.01, "val": 1, "space": "linear"}],
+            "range": ["Range", "Range", 1.0, "", 0.0, 1.0]
+        },
         "dog": {
             "breed": ["Breed", "String"],
             "gender": ["Gender", "Gender", "male"],
@@ -50,6 +55,14 @@
             "title": "Buttons",
             "basic": [
                 "bool"
+            ],
+            "advanced": []
+        },
+        "controlsReport": {
+            "title": "Controls",
+            "basic": [
+                "range",
+                "jrange"
             ],
             "advanced": []
         },

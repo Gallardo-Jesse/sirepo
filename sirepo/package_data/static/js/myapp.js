@@ -6,7 +6,13 @@ var srdbg = SIREPO.srdbg;
 SIREPO.app.config(() => {
     SIREPO.appReportTypes = `
         <div data-ng-switch-when="buttons" data-buttons-report="" class="sr-plot" data-model-name="{{ modelKey }}" data-report-id="reportId"></div>
+        <div data-ng-switch-when="controls" data-controls-report="" class="sr-plot" data-model-name="{{ modelKey }}" data-report-id="reportId"></div>
         <div data-ng-switch-when="icons" data-icons-report="" class="sr-plot" data-model-name="{{ modelKey }}" data-report-id="reportId"></div>
+    `;
+    SIREPO.appFieldEditors = `
+    <div data-ng-switch-when="JRange" class="col-sm-5">
+      <div data-j-range-slider="" data-ng-model="model[field]" data-model-name="modelName" data-field-name="field" data-model="model" data-field="model[field]"></div>
+    </div>
     `;
 });
 
@@ -166,6 +172,54 @@ SIREPO.app.directive('buttonsReport', function(appState) {
     };
 });
 
+SIREPO.app.directive('controlsReport', function(appState, panelState) {
+    return {
+        restrict: 'A',
+        scope: {
+            modelName: '@',
+        },
+        template: `
+            <div class="row">
+                <div class="col col-md-6">
+                    <div style="padding: 8px 4px;"><label>Sliders</label><span data-sr-tooltip="Proposed change to jqueryui sliders"></span></div>
+                    <div style="margin:8px;">
+                        <div>Current</div>
+                        <div data-field-editor="'range'" data-model-name="modelName" data-model="model" data-field-name="range"></div>
+                    </div>
+                    <br>
+                    <div style="margin:8px;">
+                        <div>Proposed</div>
+                        <div data-field-editor="'jrange2'" data-model-name="modelName" data-model="model" data-field-name="jrange2"></div>
+                        <div data-field-editor="'jrange1'" data-model-name="modelName" data-model="model" data-field-name="jrange1"></div>
+                    </div>
+                </div>
+            </div>
+        `,
+        controller: function($scope, $element) {
+            $scope.model = appState.models[$scope.modelName];
+
+            function buildRangeDelegate() {
+                const m = $scope.modelName;
+                const f = 'range';
+                let d = panelState.getFieldDelegate(m, f);
+                d.range = () => {
+                    return {
+                        min: appState.fieldProperties(m, f).min,
+                        max: appState.fieldProperties(m, f).max,
+                        step: 0.01
+                    };
+                };
+                d.readout = () => {
+                    return appState.modelInfo(m)[f][SIREPO.INFO_INDEX_LABEL];
+                };
+                d.update = () => {};
+                $scope.fieldDelegate = d;
+            }
+
+            buildRangeDelegate();
+        },
+    };
+});
 
 SIREPO.app.directive('iconsReport', function() {
     return {
@@ -286,6 +340,139 @@ SIREPO.app.directive('iconsReport', function() {
                     $($element).find(`code#${$scope.codeId(group, item)}`).text()
                 );
             };
+        },
+    };
+});
+
+SIREPO.app.directive('jRangeSlider', function(appState, panelState) {
+    return {
+        restrict: 'A',
+        scope: {
+            field: '<',
+            fieldName: '<',
+            model: '=',
+            modelName: '<',
+        },
+        template: `
+            <div data-label-with-tooltip="" data-label=""></div>
+            <div class="{{ sliderClass }}"></div>
+            <div style="display:flex; justify-content:space-between;">
+                    <span>{{ formatFloat(field.min) }}</span>
+                    <span>{{ display(field) }}</span>
+                    <span>{{ formatFloat(field.max) }}</span>
+            </div>
+        `,
+        controller: function($scope, $element) {
+            $scope.appState = appState;
+            $scope.sliderClass = `${$scope.modelName}-${$scope.fieldName}-slider`;
+
+            let hasSteps = false;
+            let slider = null;
+            const watchFields = ['min', 'max', 'step'].map(x => `model[fieldName].${x}`);
+            
+            function adjustToRange(val, range) {
+                if (! isValid(range)) {
+                    return val;
+                }
+                if (val < range.min) {
+                    return range.min;
+                }
+                else if (val > range.max) {
+                    return range.max;
+                }
+                else {
+                    return range.min + range.step * Math.round((val - range.min) / range.step);
+                }
+            }
+
+            function buildSlider() {
+                const range = $scope.field;
+                hasSteps = range.min !== range.max;
+                if (! hasSteps) {
+                    return;
+                }
+                const sel = $(`.${$scope.sliderClass}`);
+                let val = range.val;
+                const isMulti = Array.isArray(val);
+                if (isMulti) {
+                    val[0] = adjustToRange(val[0], range);
+                    val[1] = adjustToRange(val[1], range);
+                }
+                else {
+                    val = adjustToRange(val, range);
+                }
+                sel.slider({
+                    classes: {
+                        //tbd
+                    },
+                    min: range.min,
+                    max: range.max,
+                    range: isMulti,
+                    slide: (e, ui) => {
+                        // prevent handles from having the same value
+                        if (isMulti && ui.values[0] === ui.values[1]) {
+                            return false;
+                        }
+                        $scope.$apply(() => {
+                            if (isMulti) {
+                                $scope.field.val[ui.handleIndex] = ui.value;
+                            }
+                            else {
+                                $scope.field.val = ui.value;
+                            }
+                        });
+                    },
+                    step: range.step,
+                });
+                // jqueryui sometimes decrements the max by the step value due to floating-point
+                // shenanigans. Reset it here
+                sel.slider('instance').max = range.max;
+                sel.slider('option', isMulti ? 'values' : 'value', val);
+                sel.slider('option', 'disabled', ! isValid(range));
+                return sel;
+            }
+
+            function updateSlider() {
+                slider = buildSlider();
+            }
+
+            function isValid(range) {
+                const v = [range.min, range.max, range.step].every(x => x != null) &&
+                    range.min !== range.max;
+                return v;
+            }
+
+            $scope.display = (range) => {
+                function toLog(val, r) {
+                    return $scope.formatFloat(SIREPO.UTILS.linearToLog(val, r.min, r.max, r.step));
+                }
+
+                const v = range.val;
+                if (range.space === 'linear') {
+                    return v;
+                }
+                return Array.isArray(v) ? v.map(x => toLog(x, range)) : toLog(v);
+            };
+            $scope.formatFloat = val => SIREPO.UTILS.formatFloat(val, 4);
+            $scope.hasSteps = () => hasSteps;
+
+            panelState.waitForUI(updateSlider);
+
+            $scope.$watchGroup(
+                watchFields,
+                (newValues, oldValues) => {
+                    if (newValues.some((x, i) => x !== oldValues[i]) && ! newValues.some(x => x == null)) {
+                        updateSlider();
+                    }
+                }
+            );
+
+            $scope.$on('$destroy', () => {
+                if (slider) {
+                    slider.slider('destroy');
+                    slider = null;
+                }
+            });
         },
     };
 });
