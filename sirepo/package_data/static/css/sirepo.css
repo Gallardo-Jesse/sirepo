@@ -1196,3 +1196,7 @@ img.sr-disabled-image {
 .running-icon {
   animation: icon-rotate 2s linear 0s infinite;
 }
+
+.sr-primary {
+  background: #337ab7 !important;
+}

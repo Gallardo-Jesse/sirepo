@@ -403,7 +403,8 @@ SIREPO.app.directive('jRangeSlider', function(appState, panelState) {
                 }
                 sel.slider({
                     classes: {
-                        //tbd
+                        'ui-slider': 'ui-widget-header',
+                        'ui-slider-range': 'sr-primary',
                     },
                     min: range.min,
                     max: range.max,
