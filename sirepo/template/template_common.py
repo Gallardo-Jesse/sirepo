@@ -538,6 +538,7 @@ def heatmap(values, model, plot_fields=None, weights=None):
     import numpy
 
     r = None
+    pkdp("\n\n\n\n len-{}", len(values[0]))
     if "plotRangeType" in model:
         if model["plotRangeType"] == "fixed":
             r = [
