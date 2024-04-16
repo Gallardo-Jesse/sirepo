@@ -5,6 +5,7 @@ beginning[beta_b] = 10
 
 parameter[geometry] = open
 parameter[e_tot] = 10e6
+parameter [particle] = electron
 
 d: drift, l = 5
 q1: quad, l = 0.1, k1 =  1, superimpose, offset = 1.25
