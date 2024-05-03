@@ -16,6 +16,7 @@
         "simulationStatus": {},
         "impacttReport": {},
         "QUADRUPOLE": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
             "b1_gradient": ["Gradient [T/m]", "Float", 0],
             "L_effective": ["Effective Length [m]", "Float", 0],
             "radius": ["Radius [m]", "Float", 0],
@@ -24,6 +25,11 @@
             "x_rotation": ["Rotation Error X [rad]", "Float", 0],
             "y_rotation": ["Rotation Error Y [rad]", "Float", 0],
             "z_rotation": ["Rotation Error Z [rad]", "Float", 0]
+        },
+        "SOLENOID": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
+            "radius": ["Radius [m]", "Float", 0],
+            "fmapfn": ["FMAPFN", "InputFile", "", "Solenoid field map filename"]
         }
     },
     "view": {
