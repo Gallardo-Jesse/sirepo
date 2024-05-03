@@ -14,7 +14,17 @@
     },
     "model": {
         "simulationStatus": {},
-        "impacttReport": {}
+        "impacttReport": {},
+        "QUADRUPOLE": {
+            "b1_gradient": ["Gradient [T/m]", "Float", 0],
+            "L_effective": ["Effective Length [m]", "Float", 0],
+            "radius": ["Radius [m]", "Float", 0],
+            "x_offset": ["Misalignment X [m]", "Float", 0],
+            "y_offset": ["Misalignment Y [m]", "Float", 0],
+            "x_rotation": ["Rotation Error X [rad]", "Float", 0],
+            "y_rotation": ["Rotation Error Y [rad]", "Float", 0],
+            "z_rotation": ["Rotation Error Z [rad]", "Float", 0]
+        }
     },
     "view": {
         "simulationStatus": {
