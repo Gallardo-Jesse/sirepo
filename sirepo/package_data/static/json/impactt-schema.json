@@ -1,0 +1,25 @@
+{
+    "dynamicFiles": {
+        "sirepoLibs": {
+            "js": ["impactt.js"]
+        }
+    },
+    "localRoutes": {
+        "source": {
+            "config": {
+                "controller": "impacttSourceController as source",
+                "templateUrl": "/static/html/ipmactt-source.html"
+            }
+        }
+    },
+    "model": {
+        "simulationStatus": {},
+        "impacttReport": {}
+    },
+    "view": {
+        "simulationStatus": {
+            "title": "Simulation Status",
+            "advanced": []
+        }
+    }
+}
