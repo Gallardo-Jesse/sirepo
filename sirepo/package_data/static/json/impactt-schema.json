@@ -4,6 +4,13 @@
             "js": ["impactt.js"]
         }
     },
+    "enum": {
+        "PoleType": [
+            ["sextupole", "Sextupole"],
+            ["octupole", "Octupole"],
+            ["decapole", "Decapole"]
+        ]
+    },
     "localRoutes": {
         "source": {
             "config": {
@@ -26,9 +33,33 @@
             "y_rotation": ["Rotation Error Y [rad]", "Float", 0],
             "z_rotation": ["Rotation Error Z [rad]", "Float", 0]
         },
-        "DIPOLE": {},
-        "MULTIPOLE": {},
-        "DTL": {},
+        "DIPOLE": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
+            "x_field_strength": ["X Field Strength [T]", "Float", 0],
+            "y_field_strength": ["Y Field Strength [T]", "Float", 0],
+            "half_gap_width": ["Half of Gap Width (m)", "Float", 0],
+            "fmapfn": ["FMAPFN", "InputFile", "", "file ID to contain the geometry information of bend."]
+        },
+        "MULTIPOLE": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
+            "pole_type": ["Pole Type", "PoleType", "sextupole"],
+            "x_field_strength": ["Field Strength [T/m^n]", "Float", 0],
+            "radius": ["Radius [m]", "Float", 0],
+            "x_offset": ["Misalignment X [m]", "Float", 0],
+            "y_offset": ["Misalignment Y [m]", "Float", 0],
+            "x_rotation": ["Rotation Error X [rad]", "Float", 0],
+            "y_rotation": ["Rotation Error Y [rad]", "Float", 0],
+            "z_rotation": ["Rotation Error Z [rad]", "Float", 0],
+            "fmapfn": ["FMAPFN", "InputFile", "", "Multipole filename"]
+        },
+        "DTL": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
+            "rf_frequency": ["RF Frequency [Hz]", "RPNValue", 0, "Frequency of the RF field in Hz."],
+            "theta_0": ["Theta 0 [deg]", "RPNValue", 0, "Initial phase in degrees"],
+            "radius": ["Radius [m]", "Float", 0],
+            "field_amplitude_scale": ["Scale", "Float", 1, "This can be used to scale the field amplitude. Normally set to 1."],
+            "fmapfn": ["FMAPFN", "InputFile", "", "Drift Tube Linac filename"]
+        },
         "SOLENOID": {
             "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
             "radius": ["Radius [m]", "Float", 0],
