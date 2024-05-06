@@ -97,7 +97,7 @@
             "y_offset": ["Misalignment Y [m]", "Float", 0],
             "x_rotation": ["Rotation Error X [rad]", "Float", 0],
             "y_rotation": ["Rotation Error Y [rad]", "Float", 0],
-            "z_rotation": ["Rotation Error Z [rad]", "Float", 0],
+            "z_rotation": ["Rotation Error Z [rad]", "Float", 0]
         },
         "DRIFTTUBE": {
             "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"]
@@ -133,7 +133,7 @@
         "QUADRUPOLE": {
             "_super": ["_", "model", "_ELEMENT"],
             "b1_gradient": ["Gradient [T/m]", "Float", 0],
-            "L_effective": ["Effective Length [m]", "Float", 0],
+            "L_effective": ["Effective Length [m]", "Float", 0]
         },
         "DIPOLE": {
             "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
@@ -194,7 +194,7 @@
             "rf_field_scale": ["RF field scale", "Integer", 1, "This can be used to scale the field amplitude. Normally set to 1."],
             "rf_frequency": ["RF Frequency [Hz]", "RPNValue", 0, "Frequency of the RF field in Hz."],
             "theta_0": ["Theta 0 [deg]", "RPNValue", 0, "Initial phase in degrees"],
-            "fmapfn": ["FMAPFN", "InputFile", "", "Superconducting cavity filename"],
+            "fmapfn": ["FMAPFN", "InputFile", "", "Superconducting cavity filename"]
         }
     },
     "view": {
