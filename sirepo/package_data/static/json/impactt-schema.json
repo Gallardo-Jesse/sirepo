@@ -22,6 +22,37 @@
     "model": {
         "simulationStatus": {},
         "impacttReport": {},
+        "DRIFTTUBE": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"]
+        },
+        "CONSTFOC": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
+            "radius": ["Radius [m]", "Float", 0],
+            "x_focusing_gradient": ["X Focusing Gradient [kx0^2]", "Float", 0],
+            "y_focusing_gradient": ["Y Focusing Gradient [ky0^2]", "Float", 0],
+            "z_focusing_gradient": ["Z Focusing Gradient [kz0^2]", "Float", 0]
+        },
+        "EMFLDCART": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
+            "rf_frequency": ["RF Frequency [Hz]", "RPNValue", 0, "Frequency of the RF field in Hz."],
+            "rf_field_scale": ["RF field scale", "Integer", 1, "This can be used to scale the field amplitude. Normally set to 1."],
+            "theta_0": ["Theta 0 [deg]", "RPNValue", 0, "Initial phase in degrees"],
+            "fmapfn": ["FMAPFN", "InputFile", "", "EMfldCart filename"]
+        },
+        "EMFLDCYL": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
+            "rf_frequency": ["RF Frequency [Hz]", "RPNValue", 0, "Frequency of the RF field in Hz."],
+            "radius": ["Radius [m]", "Float", 0],
+            "theta_0": ["Theta 0 [deg]", "RPNValue", 0, "Initial phase in degrees"],
+            "fmapfn": ["FMAPFN", "InputFile", "", "EMfldCyl filename"]
+        },
+        "EMFLDANA": {
+            "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
+            "rf_frequency": ["RF Frequency [Hz]", "RPNValue", 0, "Frequency of the RF field in Hz."],
+            "e_scale": ["E Scale", "Float", 0],
+            "theta_0": ["Theta 0 [deg]", "RPNValue", 0, "Initial phase in degrees"],
+            "fmapfn": ["FMAPFN", "InputFile", "", "EMfldAna filename"]
+        },
         "QUADRUPOLE": {
             "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
             "b1_gradient": ["Gradient [T/m]", "Float", 0],
@@ -58,7 +89,28 @@
             "theta_0": ["Theta 0 [deg]", "RPNValue", 0, "Initial phase in degrees"],
             "radius": ["Radius [m]", "Float", 0],
             "field_amplitude_scale": ["Scale", "Float", 1, "This can be used to scale the field amplitude. Normally set to 1."],
-            "fmapfn": ["FMAPFN", "InputFile", "", "Drift Tube Linac filename"]
+            "fmapfn": ["FMAPFN", "InputFile", "", "Drift Tube Linac filename"],
+            "quad_1_length": ["Quad 1 Length [m]", "Float", 0],
+            "quad_1_gradient": ["Quad 1 Gradient [T/m]", "Float", 0],
+            "quad_1_x_offset": ["Quad 1 Misalignment X [m]", "Float", 0],
+            "quad_1_y_offset": ["Quad 1 Misalignment Y [m]", "Float", 0],
+            "quad_1_x_rotation": ["Quad 1 Rotation Error X [rad]", "Float", 0],
+            "quad_1_y_rotation": ["Quad 1 Rotation Error Y [rad]", "Float", 0],
+            "quad_1_z_rotation": ["Quad 1 Rotation Error Z [rad]", "Float", 0],
+            "quad_2_length": ["Quad 2 Length [m]", "Float", 0],
+            "quad_2_gradient": ["Quad 2 Gradient [T/m]", "Float", 0],
+            "quad_2_x_offset": ["Quad 2 Misalignment X [m]", "Float", 0],
+            "quad_2_y_offset": ["Quad 2 Misalignment Y [m]", "Float", 0],
+            "quad_2_x_rotation": ["Quad 2 Rotation Error X [rad]", "Float", 0],
+            "quad_2_y_rotation": ["Quad 2 Rotation Error Y [rad]", "Float", 0],
+            "quad_2_z_rotation": ["Quad 2 Rotation Error Z [rad]", "Float", 0],
+            "rf_cavity_length": ["RF Cavity Length [m]", "Float", 0],
+            "rf_cavity_gradient": ["RF Cavity Gradient [T/m]", "Float", 0],
+            "rf_cavity_x_offset": ["RF Cavity Misalignment X [m]", "Float", 0],
+            "rf_cavity_y_offset": ["RF Cavity Misalignment Y [m]", "Float", 0],
+            "rf_cavity_x_rotation": ["RF Cavity Rotation Error X [rad]", "Float", 0],
+            "rf_cavity_y_rotation": ["RF Cavity Rotation Error Y [rad]", "Float", 0],
+            "rf_cavity_z_rotation": ["RF Cavity Rotation Error Z [rad]", "Float", 0]
         },
         "SOLENOID": {
             "zedge": ["Z Edge", "Float", 0, "Longitudinal position of the entrance face of the element"],
@@ -77,6 +129,19 @@
             "y_rotation": ["Rotation Error Y [rad]", "Float", 0],
             "z_rotation": ["Rotation Error Z [rad]", "Float", 0],
             "fmapfn": ["FMAPFN", "InputFile", "", "Solenoid field map filename"]
+        },
+        "SC": {
+            "zedge": ["Z Edge", "Float", 0, "the real used field range in z is [zedge,zedge+Blength]."],
+            "rf_field_scale": ["RF field scale", "Integer", 1, "This can be used to scale the field amplitude. Normally set to 1."],
+            "rf_frequency": ["RF Frequency [Hz]", "RPNValue", 0, "Frequency of the RF field in Hz."],
+            "theta_0": ["Theta 0 [deg]", "RPNValue", 0, "Initial phase in degrees"],
+            "fmapfn": ["FMAPFN", "InputFile", "", "Superconducting cavity filename"],
+            "radius": ["Radius [m]", "Float", 0],
+            "x_offset": ["Misalignment X [m]", "Float", 0],
+            "y_offset": ["Misalignment Y [m]", "Float", 0],
+            "x_rotation": ["Rotation Error X [rad]", "Float", 0],
+            "y_rotation": ["Rotation Error Y [rad]", "Float", 0],
+            "z_rotation": ["Rotation Error Z [rad]", "Float", 0]
         }
     },
     "view": {
