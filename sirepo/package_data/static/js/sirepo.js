@@ -1392,9 +1392,10 @@ SIREPO.app.factory('authService', function(authState, uri, stringsService) {
         }
         return 'with ' + stringsService.ucfirst(method);
     }
-
+    // srdbg("visible methods", authState.visibleMethods);
     self.methods = authState.visibleMethods.map(
         function (method) {
+            srdbg("method", method);
             return {
                 'label': 'Sign in ' + label(method),
                 'url': uri.formatLocal(
@@ -1404,12 +1405,19 @@ SIREPO.app.factory('authService', function(authState, uri, stringsService) {
             };
         }
     );
+    self.methods.push(
+        {
+            label: 'Change your user email',
+            url: uri.formatLocal('changeEmail'),
+        }
+    )
+    srdbg("self.methods", self.methods);
     self.loginUrl = uri.formatLocal('login');
     self.logoutUrl = uri.format(
         'authLogout',
         {simulation_type: SIREPO.APP_SCHEMA.simulationType}
     );
-    self.changeEmailUri = uri.formatLocal('changeEmail');
+    self.changeEmailUrl = uri.formatLocal('changeEmail');
     return self;
 });
 
@@ -1974,14 +1982,16 @@ SIREPO.app.factory('uri', ($location, $rootScope, $window) => {
             }
         }
         params = p;
-        srdbg("map", map, "n", n);
+        // srdbg("map", map, "n", n);
         if (! map[n]) {
             throw new Error(`routeName=${n} not found in map=${map._name}`);
         }
         const r = map[n];
         let u = r.baseUri ? '/' + r.baseUri : '';
         let v = null;
+        // srdbg("r", r);
         for (p of r.params) {
+            // srdbg("p", p, "params", params);
             if (p.name in params) {
                 v = params[p.name];
             }
@@ -4042,6 +4052,62 @@ SIREPO.app.controller('LoginWithController', function (authState, errorService, 
         requestSender.localRedirect('login');
     }
 });
+
+
+
+SIREPO.app.controller('ChangeEmailController', function (authState, requestSender, $route) {
+    var self = this;
+    // var p = $route.current.params;
+    // self.data = {};
+    // self.showWarning = false;
+    // self.warningText = '';
+    self.userEmail = authState.userName;
+
+    // if ($route.current.templateUrl.indexOf('complete-registration') >= 0) {
+    //     if (! SIREPO.authState.isLoggedIn) {
+    //         requestSender.localRedirect('login');
+    //         return;
+    //     }
+    //     if (! SIREPO.authState.needCompleteRegistration) {
+    //         requestSender.localRedirect(SIREPO.APP_SCHEMA.appDefaults.route);
+    //         return;
+    //     }
+    //     self.submit = function() {
+    //         requestSender.sendRequest(
+    //             'authCompleteRegistration',
+    //             function (data) {
+    //                 authState.handleLogin(data, self);
+    //             },
+    //             {
+    //                 displayName: self.data.displayName,
+    //                 simulationType: SIREPO.APP_NAME
+    //             }
+    //         );
+    //     };
+    //     return;
+    // }
+    // self.needCompleteRegistration = parseInt(p.needCompleteRegistration);
+    // self.submit = function() {
+    //     requestSender.sendRequest(
+    //         {
+    //             routeName: 'authEmailAuthorized',
+    //             '<simulation_type>': SIREPO.APP_SCHEMA.simulationType,
+    //             '<token>': p.token,
+    //         },
+    //         function (data) {
+    //             authState.handleLogin(data, self);
+    //         },
+    //         {
+    //             token: p.token,
+    //             displayName: self.data.displayName,
+    //         }
+    //     );
+    // };
+    return;
+});
+
+
+
 
 SIREPO.app.controller('LoginConfirmController', function (authState, requestSender, $route) {
     var self = this;

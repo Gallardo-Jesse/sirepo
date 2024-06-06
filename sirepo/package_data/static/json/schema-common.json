@@ -401,9 +401,9 @@
                 }
             },
             "changeEmail": {
-                "route": "/login-with/:method",
+                "route": "/change-email",
                 "config": {
-                    "controller": "LoginWithController as loginWith",
+                    "controller": "ChangeEmailController as changeEmail",
                     "templateUrl": "/static/html/change-email.html"
                 }
             },

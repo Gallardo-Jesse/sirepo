@@ -33,6 +33,8 @@ LOGIN_ROUTE_NAME = "login"
 #: Email is used by moderation. Do not use this var, use qcall.auth.METHOD_EMAIL
 METHOD_EMAIL = "email"
 
+METHOD_CHANGE_EMAIL = "changeEmail"
+
 #: Guest is a special method. Do not use this var, use qcall.auth.METHOD_GUEST
 METHOD_GUEST = "guest"
 
@@ -110,6 +112,7 @@ def init_module(**imports):
 
         p = pkinspect.this_module().__name__
         visible_methods = []
+        pkdp("\n\n\n\n cfg for auth init={}", _cfg)
         valid_methods = _cfg.methods.union(_cfg.deprecated_methods)
         for n in valid_methods:
             pkdp("\n\n\n valid_methods={}", valid_methods)
@@ -133,6 +136,7 @@ def init_module(**imports):
         deprecated_methods=(set(), set, "for migrating to methods"),
         logged_in_user=(None, str, "Only for sirepo.job_supervisor"),
     )
+    pkdp("\n\n\nright after pkconfig.init={}", _cfg)
     if _cfg.logged_in_user:
         _cfg.deprecated_methods = frozenset()
         _cfg.methods = frozenset((METHOD_GUEST,))
