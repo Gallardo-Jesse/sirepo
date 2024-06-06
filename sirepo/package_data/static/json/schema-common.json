@@ -400,6 +400,13 @@
                   "templateUrl": "/static/html/login-with-email-confirm.html"
                 }
             },
+            "changeEmail": {
+                "route": "/login-with/:method",
+                "config": {
+                    "controller": "LoginWithController as loginWith",
+                    "templateUrl": "/static/html/change-email.html"
+                }
+            },
             "missingCookies": {
                 "route": "/missing-cookies",
                 "config": {

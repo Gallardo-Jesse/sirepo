@@ -967,7 +967,8 @@ SIREPO.app.directive('logoutMenu', function(authState, authService, requestSende
                 <li class="dropdown-header" data-ng-if="::authState.userName">{{ ::authState.userName }}</li>
                 <li data-ng-if="showAdmJobs()"><a data-ng-href="{{ getUrl('admJobs') }}">Admin</a></li>
                 <li><a data-ng-click="showJobsList()" style="cursor:pointer">Jobs</a></li>
-                <li><a data-ng-href="{{ ::authService.logoutUrl }}">Sign out</a></li>
+                <li><a data-ng-href="{{ ::authService.logoutUrl }}">Sign Out</a></li>
+                <li><a data-ng-href="{{ ::authService.changeEmailUrl }}">Change Email</a></li>
               </ul>
             </li>
         `,
@@ -975,6 +976,8 @@ SIREPO.app.directive('logoutMenu', function(authState, authService, requestSende
             $scope.authState = authState;
             $scope.authService = authService;
 
+            srdbg("authState", authState);
+            srdbg("authService", authService);
             $scope.getUrl = function(route) {
                 return requestSender.formatUrlLocal(route);
             };

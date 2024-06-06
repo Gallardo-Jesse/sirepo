@@ -112,6 +112,7 @@ def init_module(**imports):
         visible_methods = []
         valid_methods = _cfg.methods.union(_cfg.deprecated_methods)
         for n in valid_methods:
+            pkdp("\n\n\n valid_methods={}", valid_methods)
             m = importlib.import_module(pkinspect.module_name_join((p, n)))
             _METHOD_MODULES[n] = m
             if m.AUTH_METHOD_VISIBLE and n in _cfg.methods:

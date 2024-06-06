@@ -1409,6 +1409,7 @@ SIREPO.app.factory('authService', function(authState, uri, stringsService) {
         'authLogout',
         {simulation_type: SIREPO.APP_SCHEMA.simulationType}
     );
+    self.changeEmailUri = uri.formatLocal('changeEmail');
     return self;
 });
 
@@ -1973,6 +1974,7 @@ SIREPO.app.factory('uri', ($location, $rootScope, $window) => {
             }
         }
         params = p;
+        srdbg("map", map, "n", n);
         if (! map[n]) {
             throw new Error(`routeName=${n} not found in map=${map._name}`);
         }
