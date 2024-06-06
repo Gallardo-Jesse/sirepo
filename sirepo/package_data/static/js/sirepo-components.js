@@ -3546,6 +3546,9 @@ SIREPO.app.directive('changeEmail', function(requestSender, errorService) {
                 }
                 $scope.showWarning = false;
                 $scope.data.sentEmail = $scope.data.email;
+
+                // TODO (gurhar1133): this is just creating second user.
+                // new api needed to replace current user email with new one
                 requestSender.sendRequest(
                     'authEmailLogin',
                     handleResponse,

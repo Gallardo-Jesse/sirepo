@@ -111,7 +111,9 @@ class API(sirepo.quest.API):
 
         User has sent an email, which needs to be verified.
         """
-
+        # TODO (gurhar1133): use pieces from here to make
+        # version that does not just create new user, but changes user's
+        # email from current to new email
         def _login_text(user_data):
             if user_data.user_name:
                 return "sign in to"
