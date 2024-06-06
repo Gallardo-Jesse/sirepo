@@ -1405,12 +1405,12 @@ SIREPO.app.factory('authService', function(authState, uri, stringsService) {
             };
         }
     );
-    self.methods.push(
-        {
-            label: 'Change your user email',
-            url: uri.formatLocal('changeEmail'),
-        }
-    )
+    // self.methods.push(
+    //     {
+    //         label: 'Change your user email',
+    //         url: uri.formatLocal('changeEmail'),
+    //     }
+    // )
     srdbg("self.methods", self.methods);
     self.loginUrl = uri.formatLocal('login');
     self.logoutUrl = uri.format(

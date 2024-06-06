@@ -1,17 +1,5 @@
 <div class="container-fluid">
   <div class="row">
-          CHANGE EMAIL HERE
-    <!-- <div class="sr-input-warning" data-ng-show="showWarning">{{ loginWith.warningText }}</div>
-    <div ng-switch="::loginWith.method" class="col-sm-6 col-sm-offset-3">
-      <div ng-switch-when="email" data-email-login=""></div>
-      <div ng-switch-when="ldap" data-ldap-login=""></div>
-      <div ng-switch-default class="well text-center">{{ loginWith.msg }}</div>
-    </div> -->
-      your email:
-      <div>{{ changeEmail.userEmail }}</div>
-      new email:
-      <!-- TODO: modify the emailLogin directive or create
-        new one that sends confirmation emails to both new and old emails-->
-      <div data-email-login=""></div>
+      <div data-change-email="" data-current-email="{{ changeEmail.userEmail }}"></div>
   </div>
 </div>

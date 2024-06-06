@@ -143,6 +143,7 @@ This link will expire in {user_data.expires_minutes / 60} hours and can only be 
             )
 
         req = self.parse_post()
+        pkdp("\n\n\n REQ.req_data={}", req.req_data)
         email = _parse_email(req.req_data)
         m = self.auth_db.model(UserModel)
         u = m.unchecked_search_by(unverified_email=email)

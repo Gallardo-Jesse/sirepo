@@ -3481,6 +3481,98 @@ SIREPO.app.directive('completeRegistration', function() {
     };
 });
 
+
+
+SIREPO.app.directive('changeEmail', function(requestSender, errorService) {
+    return {
+        restrict: 'A',
+        scope: {
+            currentEmail: '@',
+        },
+        template: `
+            <div data-ng-show="isJupyterHub" class="alert alert-info col-sm-offset-2 col-sm-10" role="alert">
+            We're improving your Jupyter experience by making both Jupyter and Sirepo accessible via a single email login. Simply follow the directions below to complete this process.
+            </div>
+            <form class="form-horizontal" autocomplete="off" novalidate>
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <label class="control-label">Your Current Email Address: {{ currentEmail }}</label><br></br>
+                  <p>Enter your new email address and we'll send an authorization link to your new and previous inboxes.</p>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label">Your New Email</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" data-ng-model="data.email" required/>
+                  <div class="sr-input-warning" data-ng-show="showWarning">{{ warningText }}</div>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                   <div data-disable-after-click="">
+                    <button data-ng-click="login()" class="btn btn-primary">Continue</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+            <div data-confirmation-modal="" data-is-required="true" data-id="sr-email-login-done" data-title="Check your inbox" data-ok-text="" data-cancel-text="">
+              <p>We just emailed a confirmation link to {{ data.sentEmail }}. Click the link and you'll be signed in. You may close this window.</p>
+            </div>
+        `,
+        controller: function($scope) {
+            function handleResponse(data) {
+                if (data.state == 'ok') {
+                    $scope.showWarning = false;
+                    $scope.data.email = '';
+                    $scope.form.$setPristine();
+                    $('#sr-email-login-done').modal('show');
+                }
+                else {
+                    $scope.showWarning = true;
+                    $scope.warningText = 'Server reported an error, please contact support@sirepo.com.';
+                }
+            }
+
+            $scope.data = {};
+            $scope.isJupyterHub = SIREPO.APP_SCHEMA.simulationType == 'jupyterhublogin';
+            $scope.login = function() {
+                var e = $scope.data.email;
+                errorService.alertText('');
+                if (! ( e && e.match(/^.+@.+\..+$/) )) {
+                    $scope.showWarning = true;
+                    $scope.warningText = 'Email address is invalid. Please update and resubmit.';
+                    $scope.$broadcast('sr-clearDisableAfterClick');
+                    return;
+                }
+                $scope.showWarning = false;
+                $scope.data.sentEmail = $scope.data.email;
+                requestSender.sendRequest(
+                    'authEmailLogin',
+                    handleResponse,
+                    {
+                        email: $scope.data.sentEmail,
+                        simulationType: SIREPO.APP_NAME
+                    }
+                );
+                requestSender.sendRequest(
+                    'authEmailLogin',
+                    handleResponse,
+                    {
+                        email: $scope.currentEmail,
+                        simulationType: SIREPO.APP_NAME
+                    }
+                );
+            };
+        },
+        link: function(scope, element) {
+            // get the angular form from within the transcluded content
+            scope.form = element.find('input').eq(0).controller('form');
+        }
+    };
+});
+
+
+
 SIREPO.app.directive('emailLogin', function(requestSender, errorService) {
     return {
         restrict: 'A',
@@ -3507,7 +3599,6 @@ SIREPO.app.directive('emailLogin', function(requestSender, errorService) {
                    <div data-disable-after-click="">
                     <button data-ng-click="login()" class="btn btn-primary">Continue</button>
                   </div>
-                  <p class="help-block">By signing up for Sirepo you agree to Sirepo's <a href="en/privacy.html">privacy policy</a> and <a href="en/terms.html">terms and conditions</a>, and to receive informational and marketing communications from RadiaSoft. You may unsubscribe at any time.</p>
                 </div>
               </div>
             </form>
