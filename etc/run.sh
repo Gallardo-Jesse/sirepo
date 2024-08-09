@@ -80,37 +80,63 @@ _op_flash() {
 }
 
 _op_jupyterhub() {
-    # POSIT: versions same in container-beamsim-jupyter/build.sh
-    # Order is important: jupyterlab-server should be last so it isn't
-    # overwritten with a newer version.
-    declare p=$(pip freeze)
-    declare -a i=()
-    declare f
-    for f in \
-        jupyterhub==1.4.2 \
-        jupyterlab==3.1.14  \
-        'notebook>=6.5.6' \
-        jupyterlab-server==2.8.2\
-        ; do
-        if ! [[ $p =~ $f ]]; then
-            i+=( $f )
+    docker rm --force jupyter-vagrant >& /dev/null || true
+    docker rm --force jupyterhub >& /dev/null || true
+    rm -rf run
+    export USER_D=$PWD/run/user
+    export TLS_DIR=/srv/jupyterhub
+    export PUBLIC_IP=$(hostname -i)
+    export POOL_HOST=$(hostname -f)
+    if [[ ! $(sudo cat /etc/docker/daemon.json) =~ $POOL_HOST ]]; then
+        export POOL_HOST=localhost.localdomain
+        if [[ ! $(sudo cat /etc/docker/daemon.json) =~ $POOL_HOST ]]; then
+            echo '/etc/docker/daemon.json not right'
+            exit 1
         fi
-    done
-    if (( ${#i[@]} > 0 )); then
-        pip install "${i[@]}"
     fi
-    if ! type configurable-http-proxy &> /dev/null; then
-        npm install --global configurable-http-proxy
+    echo "Connecting to docker via $POOL_HOST"
+
+
+    # don't use $DOCKER_HOST, because docker run below will try to
+    # use it.
+    mkdir -p run/{"$POOL_HOST",user/vagrant}
+    cd run/"$POOL_HOST"
+    sudo cat /etc/docker/tls/cert.pem > cert.pem
+    sudo cat /etc/docker/tls/key.pem > key.pem
+    (sudo cat /etc/docker/tls/cacert.pem 2>/dev/null || sudo cat /etc/docker/tls/cert.pem) > cacert.pem
+    cd ../..
+    perl -p -e 's/\$([A-Z_]+)/$ENV{$1}/eg' jupyterhub_conf.py > run/jupyterhub_config.py
+
+    args=(
+        --rm
+        --tty
+        --name jupyterhub
+        --network=host
+        --workdir=/srv/jupyterhub
+        -u vagrant
+        -v $PWD/run:/srv/jupyterhub
+    )
+    d=$HOME/src/radiasoft/rsdockerspawner/rsdockerspawner
+    if [[ -d $d ]]; then
+        echo "Mount: $d"
+        args+=(
+            -v "$d:$(python -c 'from distutils.sysconfig import get_python_lib as x; print(x())')"/rsdockerspawner
+        )
     fi
-    _env_moderate jupyterhublogin
-    sirepo service tornado &
-    sirepo service nginx-proxy &
-    sirepo job_supervisor &
-    sirepo service jupyterhub &
-    declare -a x=( $(jobs -p) )
-    # TERM is better than KILL
-    trap "kill ${x[*]}" EXIT
-    wait -n
+    args+=(
+        radiasoft/jupyterhub
+        bash -l -c 'jupyterhub -f /srv/jupyterhub/jupyterhub_config.py'
+    )
+    exec docker run "${args[@]}"
+    # _env_moderate jupyterhublogin
+    # sirepo service tornado &
+    # sirepo service nginx-proxy &
+    # sirepo job_supervisor &
+    # sirepo service jupyterhub &
+    # declare -a x=( $(jobs -p) )
+    # # TERM is better than KILL
+    # trap "kill ${x[*]}" EXIT
+    # wait -n
 }
 
 _op_ldap() {
