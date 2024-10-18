@@ -292,7 +292,7 @@ class _Dispatcher(PKDict):
         for c in list(self.cmds):
             if c.op_id in msg.opIdsToCancel:
                 pkdlog("cmd={}", c)
-                c.destroy()
+                c.cancel()
         return None
 
     async def _op_io(self, msg):
@@ -453,6 +453,9 @@ class _Cmd(PKDict):
         self._start_time = int(time.time())
         self.jid = self.msg.computeJid
         self._uid = job.split_jid(jid=self.jid).uid
+
+    def cancel(self):
+        self.destroy()
 
     def destroy(self):
         self._terminating = True
@@ -672,6 +675,8 @@ class _SbatchRun(_SbatchCmd):
         )
         self.msg.jobCmd = "sbatch_status"
         self.pkdel("_in_file").remove()
+        # TODO(e-carlin): safety to confirm this isn't actually touched during destroy -> kill
+        self._process = None
 
     async def _await_start_ready(self):
         await self._start_ready.wait()
@@ -686,14 +691,8 @@ class _SbatchRun(_SbatchCmd):
         )
         await super().start()
 
-    def destroy(self):
-        if self._status_cb:
-            self._status_cb.stop()
-            self._status_cb = None
-        self._start_ready.set()
+    def cancel(self):
         if self._sbatch_id:
-            i = self._sbatch_id
-            self._sbatch_id = None
             p = subprocess.run(
                 ("scancel", "--full", "--quiet", i),
                 close_fds=True,
@@ -710,6 +709,16 @@ class _SbatchRun(_SbatchCmd):
                     p.stderr,
                     p.stdout,
                 )
+        self.destroy()
+
+    def destroy(self):
+        # Don't cancel for _SbatchRuns. Leave them running and we will
+        # re-connect next time an agent is started.
+        if self._status_cb:
+            self._status_cb.stop()
+            self._status_cb = None
+        self._start_ready.set()
+        self._sbatch_id = None
         super().destroy()
 
     async def start(self):
@@ -890,7 +899,7 @@ class _Process(PKDict):
         await self.stderr.stream_closed.wait()
 
     def kill(self):
-        # TODO(e-carlin): Terminate?
+        """Called by self.cmd.destroy to kill underlying process (self)"""
         if "returncode" in self or "_subprocess" not in self:
             return
         p = None
