@@ -289,17 +289,26 @@ def _do_prepare_simulation(msg, template):
 
 
 def _do_sbatch_status(msg, template):
-    s = pkio.py_path(msg.stopSentinel)
-    status = None
-    while not s.exists():
-        status = _write_parallel_status(status, msg, template, True)
+    def _should_exit(status_file):
+        if not status_file.exists():
+            return None
+        s = pkjson.load_any(status_file)
+        if s.get("job_cmd_state", "") in job.JOB_CMD_EXIT_STATUSES:
+            return s
+        return None
+
+    f = pkio.py_path(msg.sbatchStatusFile)
+    p = None
+    while not (s := _should_exit(f)):
+        p = _write_parallel_status(p, msg, template, True)
         # Not asyncio.sleep: not in coroutine
         time.sleep(msg.nextRequestSeconds)
-    if job.COMPLETED not in s.read():
+    if s.job_cmd_state != job.JOB_CMD_FINAL_STATUS
         # told to stop for an error or otherwise
         return None
-    status = _write_parallel_status(status, msg, template, False)
-    pkio.unchecked_remove(s)
+    _write_parallel_status(p, msg, template, False)
+    s.job_cmd_state = job.COMPLETED
+    pkio.atomic_write(f, s)
     return PKDict(state=job.COMPLETED)
 
 

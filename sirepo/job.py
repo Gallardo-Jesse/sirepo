@@ -94,11 +94,16 @@ MISSING = "missing"
 PENDING = "pending"
 RUNNING = "running"
 
+
 #: When the job is completed
 EXIT_STATUSES = frozenset((CANCELED, COMPLETED, ERROR))
 
 #: Valid values for job status
 STATUSES = EXIT_STATUSES.union((PENDING, RUNNING))
+
+#: job_cmd
+JOB_CMD_WRITE_PARALLEL_STATUS = "job_cmd_write_parallel_status"
+JOB_CMD_EXIT_STATUSES = frozenset((job_cmd_write_parallel_status,)) + EXIT_STATUSES
 
 #: jobRunMode and kinds; should come from schema
 SEQUENTIAL = "sequential"
